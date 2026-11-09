@@ -1,7 +1,8 @@
 /**
  * Problem definitions for Verilog Basics Lab.
  * Defines required ports, starter templates, reference solutions, and test cases.
- * Updated to use textbook syntax with support for both textbook non-ANSI and ANSI styles.
+ * Includes all gates, arithmetic circuits (Half Adder, Full Adder, Half Subtractor, Full Subtractor),
+ * Multiplexers, Demultiplexers, and Flip-Flops.
  */
 
 (function (root, factory) {
@@ -25,7 +26,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module and_gate(Y,A,B);\ninput A,B;\noutput Y;",
-      starterCode: "module and_gate(Y,A,B);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=A&B;)\n  \nendmodule\n",
+      starterCode: "module and_gate(Y,A,B);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=A&B;), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module and_gate(Y,A,B);\n  input A,B;\n  output Y;\n  assign Y=A&B;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -47,7 +48,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module or_gate(A,B,Y);\ninput A,B;\noutput Y;",
-      starterCode: "module or_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=A|B;)\n  \nendmodule\n",
+      starterCode: "module or_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=A|B;), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module or_gate(A,B,Y);\n  input A,B;\n  output Y;\n  assign Y=A|B;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -68,7 +69,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module not_gate(A,Y);\ninput A;\noutput Y;",
-      starterCode: "module not_gate(A,Y);\n  input A;\n  output Y;\n  // Write your code here (e.g. assign Y=~A;)\n  \nendmodule\n",
+      starterCode: "module not_gate(A,Y);\n  input A;\n  output Y;\n  // Write in Dataflow (assign Y=~A;), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module not_gate(A,Y);\n  input A;\n  output Y;\n  assign Y=~A;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -88,7 +89,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module nand_gate(A,B,Y);\ninput A,B;\noutput Y;",
-      starterCode: "module nand_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=~(A&B);)\n  \nendmodule\n",
+      starterCode: "module nand_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=~(A&B);), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module nand_gate(A,B,Y);\n  input A,B;\n  output Y;\n  assign Y=~(A&B);\nendmodule\n",
       type: "combinational",
       tests: [
@@ -110,7 +111,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module nor_gate(A,B,Y);\ninput A,B;\noutput Y;",
-      starterCode: "module nor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=~(A|B);)\n  \nendmodule\n",
+      starterCode: "module nor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=~(A|B);), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module nor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  assign Y=~(A|B);\nendmodule\n",
       type: "combinational",
       tests: [
@@ -132,7 +133,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module xor_gate(A,B,Y);\ninput A,B;\noutput Y;",
-      starterCode: "module xor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=A^B;)\n  \nendmodule\n",
+      starterCode: "module xor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=A^B;), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module xor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  assign Y=A^B;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -154,7 +155,7 @@
         { name: "Y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module xnor_gate(A,B,Y);\ninput A,B;\noutput Y;",
-      starterCode: "module xnor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write your code here (e.g. assign Y=A~^B; or assign Y=~(A^B);)\n  \nendmodule\n",
+      starterCode: "module xnor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  // Write in Dataflow (assign Y=A~^B;), Behavioral, or Structural\n  \nendmodule\n",
       solutionCode: "module xnor_gate(A,B,Y);\n  input A,B;\n  output Y;\n  assign Y=A~^B;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -165,10 +166,112 @@
       ]
     },
     {
-      id: "mux_2to1",
-      title: "8a. 2:1 Multiplexer",
+      id: "half_adder",
+      title: "8. Half Adder",
       topicId: 8,
-      description: "Implement a 2:1 Multiplexer in Dataflow modeling. When sel is 0, out is in[0] (or d0). When sel is 1, out is in[1] (or d1).",
+      description: "Implement a Half Adder with inputs A and B, producing Sum (S) and Carry (C). S = A ^ B, C = A & B.",
+      moduleName: "half_adder",
+      requiredPorts: [
+        { name: "A", direction: "input", width: 1 },
+        { name: "B", direction: "input", width: 1 },
+        { name: "S", direction: "output", width: 1 },
+        { name: "C", direction: "output", width: 1 }
+      ],
+      portDeclarationStr: "module half_adder(A,B,S,C);\ninput A,B;\noutput S,C;",
+      starterCode: "module half_adder(A,B,S,C);\n  input A,B;\n  output S,C;\n  // Dataflow: assign S=A^B; assign C=A&B;\n  // Structural: xor(S,A,B); and(C,A,B);\n  \nendmodule\n",
+      solutionCode: "module half_adder(A,B,S,C);\n  input A,B;\n  output S,C;\n  assign S=A^B;\n  assign C=A&B;\nendmodule\n",
+      type: "combinational",
+      tests: [
+        { inputs: { A: 0, B: 0 }, expected: { S: 0, C: 0 } },
+        { inputs: { A: 0, B: 1 }, expected: { S: 1, C: 0 } },
+        { inputs: { A: 1, B: 0 }, expected: { S: 1, C: 0 } },
+        { inputs: { A: 1, B: 1 }, expected: { S: 0, C: 1 } }
+      ]
+    },
+    {
+      id: "full_adder",
+      title: "9. Full Adder",
+      topicId: 9,
+      description: "Implement a Full Adder with inputs A, B, and Cin, producing Sum (S) and Cout. S = A ^ B ^ Cin, Cout = (A & B) | (B & Cin) | (A & Cin).",
+      moduleName: "full_adder",
+      requiredPorts: [
+        { name: "A", direction: "input", width: 1 },
+        { name: "B", direction: "input", width: 1 },
+        { name: "Cin", direction: "input", width: 1 },
+        { name: "S", direction: "output", width: 1 },
+        { name: "Cout", direction: "output", width: 1 }
+      ],
+      portDeclarationStr: "module full_adder(A,B,Cin,S,Cout);\ninput A,B,Cin;\noutput S,Cout;",
+      starterCode: "module full_adder(A,B,Cin,S,Cout);\n  input A,B,Cin;\n  output S,Cout;\n  // Write using Dataflow, Behavioral, or Structural\n  \nendmodule\n",
+      solutionCode: "module full_adder(A,B,Cin,S,Cout);\n  input A,B,Cin;\n  output S,Cout;\n  assign S = A ^ B ^ Cin;\n  assign Cout = (A & B) | (B & Cin) | (A & Cin);\nendmodule\n",
+      type: "combinational",
+      tests: [
+        { inputs: { A: 0, B: 0, Cin: 0 }, expected: { S: 0, Cout: 0 } },
+        { inputs: { A: 0, B: 0, Cin: 1 }, expected: { S: 1, Cout: 0 } },
+        { inputs: { A: 0, B: 1, Cin: 0 }, expected: { S: 1, Cout: 0 } },
+        { inputs: { A: 0, B: 1, Cin: 1 }, expected: { S: 0, Cout: 1 } },
+        { inputs: { A: 1, B: 0, Cin: 0 }, expected: { S: 1, Cout: 0 } },
+        { inputs: { A: 1, B: 0, Cin: 1 }, expected: { S: 0, Cout: 1 } },
+        { inputs: { A: 1, B: 1, Cin: 0 }, expected: { S: 0, Cout: 1 } },
+        { inputs: { A: 1, B: 1, Cin: 1 }, expected: { S: 1, Cout: 1 } }
+      ]
+    },
+    {
+      id: "half_subtractor",
+      title: "10. Half Subtractor",
+      topicId: 10,
+      description: "Implement a Half Subtractor with inputs A and B, producing Difference (Diff) and Borrow (Borrow). Diff = A ^ B, Borrow = ~A & B.",
+      moduleName: "half_subtractor",
+      requiredPorts: [
+        { name: "A", direction: "input", width: 1 },
+        { name: "B", direction: "input", width: 1 },
+        { name: "Diff", direction: "output", width: 1 },
+        { name: "Borrow", direction: "output", width: 1 }
+      ],
+      portDeclarationStr: "module half_subtractor(A,B,Diff,Borrow);\ninput A,B;\noutput Diff,Borrow;",
+      starterCode: "module half_subtractor(A,B,Diff,Borrow);\n  input A,B;\n  output Diff,Borrow;\n  // Dataflow: assign Diff=A^B; assign Borrow=~A&B;\n  \nendmodule\n",
+      solutionCode: "module half_subtractor(A,B,Diff,Borrow);\n  input A,B;\n  output Diff,Borrow;\n  assign Diff=A^B;\n  assign Borrow=~A&B;\nendmodule\n",
+      type: "combinational",
+      tests: [
+        { inputs: { A: 0, B: 0 }, expected: { Diff: 0, Borrow: 0 } },
+        { inputs: { A: 0, B: 1 }, expected: { Diff: 1, Borrow: 1 } },
+        { inputs: { A: 1, B: 0 }, expected: { Diff: 1, Borrow: 0 } },
+        { inputs: { A: 1, B: 1 }, expected: { Diff: 0, Borrow: 0 } }
+      ]
+    },
+    {
+      id: "full_subtractor",
+      title: "11. Full Subtractor",
+      topicId: 11,
+      description: "Implement a Full Subtractor with inputs A, B, and Bin, producing Difference (Diff) and Bout. Diff = A ^ B ^ Bin, Bout = (~A & B) | (~(A ^ B) & Bin).",
+      moduleName: "full_subtractor",
+      requiredPorts: [
+        { name: "A", direction: "input", width: 1 },
+        { name: "B", direction: "input", width: 1 },
+        { name: "Bin", direction: "input", width: 1 },
+        { name: "Diff", direction: "output", width: 1 },
+        { name: "Bout", direction: "output", width: 1 }
+      ],
+      portDeclarationStr: "module full_subtractor(A,B,Bin,Diff,Bout);\ninput A,B,Bin;\noutput Diff,Bout;",
+      starterCode: "module full_subtractor(A,B,Bin,Diff,Bout);\n  input A,B,Bin;\n  output Diff,Bout;\n  // Write using Dataflow, Behavioral, or Structural\n  \nendmodule\n",
+      solutionCode: "module full_subtractor(A,B,Bin,Diff,Bout);\n  input A,B,Bin;\n  output Diff,Bout;\n  assign Diff = A ^ B ^ Bin;\n  assign Bout = (~A & B) | (~(A ^ B) & Bin);\nendmodule\n",
+      type: "combinational",
+      tests: [
+        { inputs: { A: 0, B: 0, Bin: 0 }, expected: { Diff: 0, Bout: 0 } },
+        { inputs: { A: 0, B: 0, Bin: 1 }, expected: { Diff: 1, Bout: 1 } },
+        { inputs: { A: 0, B: 1, Bin: 0 }, expected: { Diff: 1, Bout: 1 } },
+        { inputs: { A: 0, B: 1, Bin: 1 }, expected: { Diff: 0, Bout: 1 } },
+        { inputs: { A: 1, B: 0, Bin: 0 }, expected: { Diff: 1, Bout: 0 } },
+        { inputs: { A: 1, B: 0, Bin: 1 }, expected: { Diff: 0, Bout: 0 } },
+        { inputs: { A: 1, B: 1, Bin: 0 }, expected: { Diff: 0, Bout: 0 } },
+        { inputs: { A: 1, B: 1, Bin: 1 }, expected: { Diff: 1, Bout: 1 } }
+      ]
+    },
+    {
+      id: "mux_2to1",
+      title: "12a. 2:1 Multiplexer",
+      topicId: 12,
+      description: "Implement a 2:1 Multiplexer. When sel is 0, out is d0. When sel is 1, out is d1.",
       moduleName: "mux_2to1",
       requiredPorts: [
         { name: "d0", direction: "input", width: 1 },
@@ -177,7 +280,7 @@
         { name: "y", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module mux_2to1(d0,d1,sel,y);\ninput d0,d1,sel;\noutput y;",
-      starterCode: "module mux_2to1(d0,d1,sel,y);\n  input d0,d1,sel;\n  output y;\n  // Dataflow modeling using assign\n  assign y = (~sel & d0) | (sel & d1);\nendmodule\n",
+      starterCode: "module mux_2to1(d0,d1,sel,y);\n  input d0,d1,sel;\n  output y;\n  assign y = (~sel & d0) | (sel & d1);\nendmodule\n",
       solutionCode: "module mux_2to1(d0,d1,sel,y);\n  input d0,d1,sel;\n  output y;\n  assign y = (~sel & d0) | (sel & d1);\nendmodule\n",
       type: "combinational",
       tests: [
@@ -193,8 +296,8 @@
     },
     {
       id: "mux4_1",
-      title: "8b. 4:1 Multiplexer (Textbook Dataflow)",
-      topicId: 8,
+      title: "12b. 4:1 Multiplexer (Dataflow)",
+      topicId: 12,
       description: "Implement a 4:1 Multiplexer in textbook dataflow modeling using inputs `s0, s1`, a 4-bit bus `in[3:0]`, and output `out`.",
       moduleName: "mux4_1",
       requiredPorts: [
@@ -204,7 +307,7 @@
         { name: "out", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module mux4_1(in,s0,s1,out);\ninput s0,s1;\ninput [3:0]in;\noutput out;",
-      starterCode: "module mux4_1(in,s0,s1,out);\n  input s0,s1;\n  input [3:0]in;\n  output out;\n  // Write textbook dataflow assign equation\n  \nendmodule\n",
+      starterCode: "module mux4_1(in,s0,s1,out);\n  input s0,s1;\n  input [3:0]in;\n  output out;\n  // Textbook dataflow equation\n  assign out=(~s1&~s0&in[0])|(~s1&s0&in[1])|(s1&~s0&in[2])|(s1&s0&in[3]);\nendmodule\n",
       solutionCode: "module mux4_1(in,s0,s1,out);\n  input s0,s1;\n  input [3:0]in;\n  output out;\n  assign out=(~s1&~s0&in[0])|(~s1&s0&in[1])|(s1&~s0&in[2])|(s1&s0&in[3]);\nendmodule\n",
       type: "combinational",
       tests: [
@@ -220,9 +323,9 @@
     },
     {
       id: "demux_1to2",
-      title: "9a. 1:2 Demultiplexer",
-      topicId: 9,
-      description: "Implement a 1:2 Demultiplexer in dataflow modeling with input `d`, select `sel`, and outputs `y0, y1`.",
+      title: "13a. 1:2 Demultiplexer",
+      topicId: 13,
+      description: "Implement a 1:2 Demultiplexer with input `d`, select `sel`, and outputs `y0, y1`.",
       moduleName: "demux_1to2",
       requiredPorts: [
         { name: "d", direction: "input", width: 1 },
@@ -243,8 +346,8 @@
     },
     {
       id: "demux1_4",
-      title: "9b. 1:4 Demultiplexer (Textbook Dataflow)",
-      topicId: 9,
+      title: "13b. 1:4 Demultiplexer (Dataflow)",
+      topicId: 13,
       description: "Implement a 1:4 Demultiplexer in textbook dataflow modeling with inputs `s0, s1, in` and a 4-bit output vector `out[3:0]`.",
       moduleName: "demux1_4",
       requiredPorts: [
@@ -254,7 +357,7 @@
         { name: "out", direction: "output", width: 4 }
       ],
       portDeclarationStr: "module demux1_4(in,s0,s1,out);\ninput s0,s1,in;\noutput [3:0]out;",
-      starterCode: "module demux1_4(in,s0,s1,out);\n  input s0,s1,in;\n  output [3:0]out;\n  // Write textbook dataflow assign equations\n  \nendmodule\n",
+      starterCode: "module demux1_4(in,s0,s1,out);\n  input s0,s1,in;\n  output [3:0]out;\n  assign out[0]=~s1&~s0&in;\n  assign out[1]=~s1&s0&in;\n  assign out[2]=s1&~s0&in;\n  assign out[3]=s1&s0&in;\nendmodule\n",
       solutionCode: "module demux1_4(in,s0,s1,out);\n  input s0,s1,in;\n  output [3:0]out;\n  assign out[0]=~s1&~s0&in;\n  assign out[1]=~s1&s0&in;\n  assign out[2]=s1&~s0&in;\n  assign out[3]=s1&s0&in;\nendmodule\n",
       type: "combinational",
       tests: [
@@ -267,8 +370,8 @@
     },
     {
       id: "d_ff",
-      title: "10. D Flip-Flop (Behavioral)",
-      topicId: 10,
+      title: "14. D Flip-Flop (Behavioral)",
+      topicId: 14,
       description: "Implement a D Flip-Flop using Behavioral Modeling with an `always` procedural block and asynchronous active-high reset (`rst`).",
       moduleName: "d_ff",
       requiredPorts: [
@@ -278,7 +381,7 @@
         { name: "q", direction: "output", width: 1 }
       ],
       portDeclarationStr: "module d_ff(clk,rst,d,q);\ninput clk,rst,d;\noutput reg q;",
-      starterCode: "module d_ff(clk,rst,d,q);\n  input clk,rst,d;\n  output reg q;\n  always @(posedge clk or posedge rst) begin\n    // Behavioral modeling with if-else\n    \n  end\nendmodule\n",
+      starterCode: "module d_ff(clk,rst,d,q);\n  input clk,rst,d;\n  output reg q;\n  always @(posedge clk or posedge rst) begin\n    if (rst)\n      q <= 1'b0;\n    else\n      q <= d;\n  end\nendmodule\n",
       solutionCode: "module d_ff(clk,rst,d,q);\n  input clk,rst,d;\n  output reg q;\n  always @(posedge clk or posedge rst) begin\n    if (rst)\n      q <= 1'b0;\n    else\n      q <= d;\n  end\nendmodule\n",
       type: "sequential",
       sequence: [
@@ -291,9 +394,9 @@
     },
     {
       id: "jk_ff",
-      title: "11. JK Flip-Flop (Behavioral)",
-      topicId: 11,
-      description: "Implement a JK Flip-Flop using Behavioral Modeling (`always @(posedge clk or posedge rst)`) with `case` or `if-else` statement.",
+      title: "15. JK Flip-Flop (Behavioral)",
+      topicId: 15,
+      description: "Implement a JK Flip-Flop using Behavioral Modeling with asynchronous active-high reset (`rst`).",
       moduleName: "jk_ff",
       requiredPorts: [
         { name: "clk", direction: "input", width: 1 },

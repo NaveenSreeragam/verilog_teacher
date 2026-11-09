@@ -144,7 +144,6 @@
         var bitIdx = sigMatch[2] !== undefined ? parseInt(sigMatch[2], 10) : null;
         return {
           eval: function (ctx) {
-            // Case-sensitive first, then case-insensitive fallback
             var foundKey = null;
             if (name in ctx) {
               foundKey = name;
@@ -275,7 +274,6 @@
         lsb: lsb || 0,
         isReg: !!isReg
       };
-      // If already declared (e.g. in port list then redefined with width in body)
       if (portsByName[name]) {
         if (direction) portsByName[name].direction = direction;
         if (width && width > 1) {
@@ -328,14 +326,12 @@
         }
       }
     } else {
-      // Non-ANSI ports: module m(Y,A,B); input A,B; output Y;
-      // First populate names from header
+      // Non-ANSI ports
       var headerNames = portListStr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       for (var h = 0; h < headerNames.length; h++) {
         addPort(headerNames[h], 'input', 1, 0, 0, false);
       }
 
-      // Now scan body for input/output declarations
       var dirRegex = /\b(input|output)\s*(reg|wire)?\s*(\[\s*[0-9]+\s*:\s*[0-9]+\s*\])?\s*([^;]+);/g;
       var dMatch;
       while ((dMatch = dirRegex.exec(moduleBody)) !== null) {
@@ -378,6 +374,7 @@
     }
 
     // Gate primitives: and, or, not, nand, nor, xor, xnor
+    // Support multi-line gate declarations and multiple inputs: and g1(y, a, b);
     var gates = [];
     var gateRegex = /\b(and|or|not|nand|nor|xor|xnor)\s+([a-zA-Z_][a-zA-Z0-9_]*)?\s*\(([\s\S]*?)\)\s*;/g;
     var gMatch;
@@ -438,8 +435,12 @@
       } else {
         context[tName] = curVal & ~(1 << bIdx);
       }
+      context[tName.toLowerCase()] = context[tName];
+      context[tName.toUpperCase()] = context[tName];
     } else {
       context[target] = val;
+      context[target.toLowerCase()] = val;
+      context[target.toUpperCase()] = val;
     }
   }
 
@@ -552,7 +553,6 @@
     }
   }
 
-  // Extract a statement or begin...end block as next unit
   function extractNextUnit(str) {
     str = str.trim();
     if (/^begin\b/i.test(str)) {
@@ -648,10 +648,9 @@
     }
   }
 
-  // Simulate combinational circuit
+  // Simulate combinational circuit with iterative convergence for structural wires
   function simulateCombinational(parsedModule, inputValues) {
     var context = {};
-    // Populate all inputs (also store both original case and lowercase for case-insensitivity)
     for (var inName in inputValues) {
       context[inName] = inputValues[inName];
       context[inName.toLowerCase()] = inputValues[inName];
@@ -661,55 +660,58 @@
     for (var i = 0; i < parsedModule.ports.length; i++) {
       var p = parsedModule.ports[i];
       if (p.direction === 'output' && !(p.name in context)) {
-        context[p.name] = 0;
+        setTargetValue(p.name, 0, context);
       }
     }
 
-    // Gate primitives
-    for (var g = 0; g < parsedModule.gates.length; g++) {
-      var gate = parsedModule.gates[g];
-      var inVals = gate.inputs.map(function (inName) {
-        return evaluateExpression(inName, context);
-      });
-      var outVal = 0;
-      switch (gate.type) {
-        case 'and':
-          outVal = inVals.reduce(function (a, b) { return a & b; }, 1);
-          break;
-        case 'or':
-          outVal = inVals.reduce(function (a, b) { return a | b; }, 0);
-          break;
-        case 'not':
-          outVal = inVals[0] ? 0 : 1;
-          break;
-        case 'nand':
-          outVal = (inVals.reduce(function (a, b) { return a & b; }, 1)) ? 0 : 1;
-          break;
-        case 'nor':
-          outVal = (inVals.reduce(function (a, b) { return a | b; }, 0)) ? 0 : 1;
-          break;
-        case 'xor':
-          outVal = inVals.reduce(function (a, b) { return (a ^ b) & 1; }, 0);
-          break;
-        case 'xnor':
-          outVal = (inVals.reduce(function (a, b) { return (a ^ b) & 1; }, 0)) ? 0 : 1;
-          break;
+    // Iterative evaluation (up to 5 passes) so interconnected structural gates / internal wires settle
+    for (var pass = 0; pass < 5; pass++) {
+      // 1. Gate primitives
+      for (var g = 0; g < parsedModule.gates.length; g++) {
+        var gate = parsedModule.gates[g];
+        var inVals = gate.inputs.map(function (inName) {
+          return evaluateExpression(inName, context);
+        });
+        var outVal = 0;
+        switch (gate.type) {
+          case 'and':
+            outVal = inVals.reduce(function (a, b) { return a & b; }, 1);
+            break;
+          case 'or':
+            outVal = inVals.reduce(function (a, b) { return a | b; }, 0);
+            break;
+          case 'not':
+            outVal = inVals[0] ? 0 : 1;
+            break;
+          case 'nand':
+            outVal = (inVals.reduce(function (a, b) { return a & b; }, 1)) ? 0 : 1;
+            break;
+          case 'nor':
+            outVal = (inVals.reduce(function (a, b) { return a | b; }, 0)) ? 0 : 1;
+            break;
+          case 'xor':
+            outVal = inVals.reduce(function (a, b) { return (a ^ b) & 1; }, 0);
+            break;
+          case 'xnor':
+            outVal = (inVals.reduce(function (a, b) { return (a ^ b) & 1; }, 0)) ? 0 : 1;
+            break;
+        }
+        setTargetValue(gate.output, outVal, context);
       }
-      setTargetValue(gate.output, outVal, context);
-    }
 
-    // Assign statements
-    for (var a = 0; a < parsedModule.assigns.length; a++) {
-      var asgn = parsedModule.assigns[a];
-      var val = evaluateExpression(asgn.expr, context);
-      setTargetValue(asgn.target, val, context);
-    }
+      // 2. Assign statements
+      for (var a = 0; a < parsedModule.assigns.length; a++) {
+        var asgn = parsedModule.assigns[a];
+        var val = evaluateExpression(asgn.expr, context);
+        setTargetValue(asgn.target, val, context);
+      }
 
-    // always @(*) blocks
-    for (var b = 0; b < parsedModule.alwaysBlocks.length; b++) {
-      var block = parsedModule.alwaysBlocks[b];
-      if (block.sensitivity.indexOf('posedge') === -1) {
-        executeStatements(block.body, context);
+      // 3. always @(*) blocks
+      for (var b = 0; b < parsedModule.alwaysBlocks.length; b++) {
+        var block = parsedModule.alwaysBlocks[b];
+        if (block.sensitivity.indexOf('posedge') === -1) {
+          executeStatements(block.body, context);
+        }
       }
     }
 
@@ -744,7 +746,6 @@
       if ('j' in stepData) context.j = stepData.j;
       if ('k' in stepData) context.k = stepData.k;
 
-      // Duplicate in case uppercase / lowercase used
       for (var k in context) {
         context[k.toLowerCase()] = context[k];
         context[k.toUpperCase()] = context[k];
@@ -756,7 +757,6 @@
         executeStatements(dffBlock.body, context);
       }
 
-      // Check q in context (or Q)
       var qVal = context.q !== undefined ? context.q : context.Q;
       state.q = (qVal !== undefined) ? (qVal & 1) : 0;
 
@@ -778,7 +778,6 @@
     try {
       var parsed = parseVerilog(userCode);
 
-      // Check module name (case-insensitive check for learner convenience)
       if (parsed.moduleName.toLowerCase() !== problem.moduleName.toLowerCase()) {
         return {
           status: 'error',
@@ -788,7 +787,6 @@
         };
       }
 
-      // Check required ports (case-insensitive lookup)
       for (var p = 0; p < problem.requiredPorts.length; p++) {
         var req = problem.requiredPorts[p];
         var actual = null;

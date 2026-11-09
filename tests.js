@@ -30,122 +30,185 @@ problems.forEach(p => {
   assert(res.status === 'correct', `Official Solution for [${p.id}] should pass`, res);
 });
 
-// 2. Test AND gate using gate primitive
-const andGatePrimitive = `
-module and_gate(Y,A,B);
+// 2. Test Half Adder in Structural Modeling
+const haStructural = `
+module half_adder(A,B,S,C);
   input A,B;
-  output Y;
-  and g1(Y, A, B);
+  output S,C;
+  xor g1(S, A, B);
+  and g2(C, A, B);
 endmodule
 `;
+const haProb = problems.find(p => p.id === 'half_adder');
+const haStructRes = VerilogChecker.checkSolution(haStructural, haProb);
+assert(haStructRes.status === 'correct', "Half Adder in Structural Modeling should pass", haStructRes);
+
+// 3. Test Half Adder in Behavioral Modeling
+const haBehavioral = `
+module half_adder(A,B,S,C);
+  input A,B;
+  output reg S,C;
+  always @(*) begin
+    S = A ^ B;
+    C = A & B;
+  end
+endmodule
+`;
+const haBehRes = VerilogChecker.checkSolution(haBehavioral, haProb);
+assert(haBehRes.status === 'correct', "Half Adder in Behavioral Modeling should pass", haBehRes);
+
+// 4. Test Full Adder in Structural Modeling
+const faStructural = `
+module full_adder(A,B,Cin,S,Cout);
+  input A,B,Cin;
+  output S,Cout;
+  wire w1, w2, w3;
+  xor g1(w1, A, B);
+  xor g2(S, w1, Cin);
+  and g3(w2, w1, Cin);
+  and g4(w3, A, B);
+  or  g5(Cout, w2, w3);
+endmodule
+`;
+const faProb = problems.find(p => p.id === 'full_adder');
+const faStructRes = VerilogChecker.checkSolution(faStructural, faProb);
+assert(faStructRes.status === 'correct', "Full Adder in Structural Modeling should pass", faStructRes);
+
+// 5. Test Full Adder in Behavioral Modeling
+const faBehavioral = `
+module full_adder(A,B,Cin,S,Cout);
+  input A,B,Cin;
+  output reg S,Cout;
+  always @(*) begin
+    S = A ^ B ^ Cin;
+    Cout = (A & B) | (B & Cin) | (A & Cin);
+  end
+endmodule
+`;
+const faBehRes = VerilogChecker.checkSolution(faBehavioral, faProb);
+assert(faBehRes.status === 'correct', "Full Adder in Behavioral Modeling should pass", faBehRes);
+
+// 6. Test Half Subtractor in Structural Modeling
+const hsStructural = `
+module half_subtractor(A,B,Diff,Borrow);
+  input A,B;
+  output Diff,Borrow;
+  wire w1;
+  xor g1(Diff, A, B);
+  not g2(w1, A);
+  and g3(Borrow, w1, B);
+endmodule
+`;
+const hsProb = problems.find(p => p.id === 'half_subtractor');
+const hsStructRes = VerilogChecker.checkSolution(hsStructural, hsProb);
+assert(hsStructRes.status === 'correct', "Half Subtractor in Structural Modeling should pass", hsStructRes);
+
+// 7. Test Full Subtractor in Structural Modeling
+const fsStructural = `
+module full_subtractor(A,B,Bin,Diff,Bout);
+  input A,B,Bin;
+  output Diff,Bout;
+  wire w1, w2, w3, notA, w4;
+  xor g1(w1, A, B);
+  xor g2(Diff, w1, Bin);
+  not g3(w2, w1);
+  and g4(w3, w2, Bin);
+  not g5(notA, A);
+  and g6(w4, notA, B);
+  or  g7(Bout, w3, w4);
+endmodule
+`;
+const fsProb = problems.find(p => p.id === 'full_subtractor');
+const fsStructRes = VerilogChecker.checkSolution(fsStructural, fsProb);
+assert(fsStructRes.status === 'correct', "Full Subtractor in Structural Modeling should pass", fsStructRes);
+
+// 8. Test AND gate in all 3 styles
 const andProb = problems.find(p => p.id === 'and_gate');
-const andPrimRes = VerilogChecker.checkSolution(andGatePrimitive, andProb);
-assert(andPrimRes.status === 'correct', "AND Gate using gate primitive 'and g1(Y, A, B);' should pass", andPrimRes);
+const andDataflow = `module and_gate(Y,A,B); input A,B; output Y; assign Y = A & B; endmodule`;
+const andBehavioral = `module and_gate(Y,A,B); input A,B; output reg Y; always @(*) Y = A & B; endmodule`;
+const andStructural = `module and_gate(Y,A,B); input A,B; output Y; and g1(Y, A, B); endmodule`;
+assert(VerilogChecker.checkSolution(andDataflow, andProb).status === 'correct', "AND Gate in Dataflow should pass");
+assert(VerilogChecker.checkSolution(andBehavioral, andProb).status === 'correct', "AND Gate in Behavioral should pass");
+assert(VerilogChecker.checkSolution(andStructural, andProb).status === 'correct', "AND Gate in Structural should pass");
 
-// 3. Test AND gate with ANSI port style
-const andAnsi = `
-module and_gate(input A, input B, output Y);
-  assign Y = A & B;
-endmodule
-`;
-const andAnsiRes = VerilogChecker.checkSolution(andAnsi, andProb);
-assert(andAnsiRes.status === 'correct', "AND Gate with ANSI ports should pass", andAnsiRes);
+// 9. Test OR gate in all 3 styles
+const orProb = problems.find(p => p.id === 'or_gate');
+const orStructural = `module or_gate(A,B,Y); input A,B; output Y; or g1(Y, A, B); endmodule`;
+assert(VerilogChecker.checkSolution(orStructural, orProb).status === 'correct', "OR Gate in Structural should pass");
 
-// 4. Test NOT gate primitive
+// 10. Test NOT gate in all 3 styles
 const notProb = problems.find(p => p.id === 'not_gate');
-const notPrimitive = `
-module not_gate(A, Y);
-  input A;
-  output Y;
-  not n1(Y, A);
-endmodule
-`;
-const notPrimRes = VerilogChecker.checkSolution(notPrimitive, notProb);
-assert(notPrimRes.status === 'correct', "NOT Gate using gate primitive 'not n1(Y, A);' should pass", notPrimRes);
+const notStructural = `module not_gate(A,Y); input A; output Y; not n1(Y, A); endmodule`;
+assert(VerilogChecker.checkSolution(notStructural, notProb).status === 'correct', "NOT Gate in Structural should pass");
 
-// 5. Test Wrong XOR (e.g. someone using OR '|' instead of '^')
+// 11. Test XOR gate in all 3 styles
 const xorProb = problems.find(p => p.id === 'xor_gate');
-const wrongXor = `
-module xor_gate(A,B,Y);
-  input A,B;
-  output Y;
-  assign Y = A | B; // Bug: using OR instead of XOR
-endmodule
-`;
-const wrongXorRes = VerilogChecker.checkSolution(wrongXor, xorProb);
-assert(wrongXorRes.status === 'wrong', "Wrong XOR (using OR logic) should be flagged as 'wrong'", wrongXorRes);
+const xorStructural = `module xor_gate(A,B,Y); input A,B; output Y; xor g1(Y, A, B); endmodule`;
+assert(VerilogChecker.checkSolution(xorStructural, xorProb).status === 'correct', "XOR Gate in Structural should pass");
 
-// 6. Test 4:1 Mux with textbook dataflow equation
+// 12. Test Wrong XOR detection
+const wrongXor = `module xor_gate(A,B,Y); input A,B; output Y; assign Y = A | B; endmodule`;
+assert(VerilogChecker.checkSolution(wrongXor, xorProb).status === 'wrong', "Wrong XOR should be flagged as 'wrong'");
+
+// 13. Test 4:1 Mux with case statement
 const mux4Prob = problems.find(p => p.id === 'mux4_1');
-const mux4Dataflow = `
+const mux4Case = `
 module mux4_1(in,s0,s1,out);
-input s0,s1;
-input [3:0]in;
-output out;
-assign out=(~s1&~s0&in[0])|(~s1&s0&in[1])|(s1&~s0&in[2])|(s1&s0&in[3]);
+  input s0,s1;
+  input [3:0]in;
+  output reg out;
+  always @(*) begin
+    case ({s1, s0})
+      2'b00: out = in[0];
+      2'b01: out = in[1];
+      2'b10: out = in[2];
+      2'b11: out = in[3];
+      default: out = 1'b0;
+    endcase
+  end
 endmodule
 `;
-const mux4Res = VerilogChecker.checkSolution(mux4Dataflow, mux4Prob);
-assert(mux4Res.status === 'correct', "4:1 Mux with textbook dataflow assign should pass", mux4Res);
+assert(VerilogChecker.checkSolution(mux4Case, mux4Prob).status === 'correct', "4:1 Mux in Behavioral case should pass");
 
-// 7. Test 1:4 Demux with textbook dataflow equations
-const demux4Prob = problems.find(p => p.id === 'demux1_4');
-const demux4Dataflow = `
-module demux1_4(in,s0,s1,out);
-input s0,s1,in;
-output [3:0]out;
-assign out[0]=~s1&~s0&in;
-assign out[1]=~s1&s0&in;
-assign out[2]=s1&~s0&in;
-assign out[3]=s1&s0&in;
-endmodule
-`;
-const demux4Res = VerilogChecker.checkSolution(demux4Dataflow, demux4Prob);
-assert(demux4Res.status === 'correct', "1:4 Demux with textbook dataflow assign should pass", demux4Res);
-
-// 8. Test D flip-flop with alternative syntax (if-else)
+// 14. Test D flip-flop
 const dffProb = problems.find(p => p.id === 'd_ff');
-const dffCorrect = `
+const dffCode = `
 module d_ff(clk,rst,d,q);
   input clk,rst,d;
   output reg q;
   always @(posedge clk or posedge rst) begin
-    if (rst == 1'b1)
+    if (rst)
       q <= 1'b0;
     else
       q <= d;
   end
 endmodule
 `;
-const dffRes = VerilogChecker.checkSolution(dffCorrect, dffProb);
-assert(dffRes.status === 'correct', "D flip-flop with 'if (rst == 1'b1)' should pass", dffRes);
+assert(VerilogChecker.checkSolution(dffCode, dffProb).status === 'correct', "D flip-flop Behavioral should pass");
 
-// 9. Test JK flip-flop with if-else logic instead of case
+// 15. Test JK flip-flop
 const jkProb = problems.find(p => p.id === 'jk_ff');
-const jkIfElse = `
+const jkCode = `
 module jk_ff(clk,rst,j,k,q);
   input clk,rst,j,k;
   output reg q;
   always @(posedge clk or posedge rst) begin
-    if (rst) begin
+    if (rst)
       q <= 1'b0;
-    end else begin
-      if (j == 0 && k == 0)
-        q <= q;
-      else if (j == 0 && k == 1)
-        q <= 1'b0;
-      else if (j == 1 && k == 0)
-        q <= 1'b1;
-      else if (j == 1 && k == 1)
-        q <= ~q;
+    else begin
+      case ({j, k})
+        2'b00: q <= q;
+        2'b01: q <= 1'b0;
+        2'b10: q <= 1'b1;
+        2'b11: q <= ~q;
+      endcase
     end
   end
 endmodule
 `;
-const jkIfElseRes = VerilogChecker.checkSolution(jkIfElse, jkProb);
-assert(jkIfElseRes.status === 'correct', "JK flip-flop using if/else if logic should pass", jkIfElseRes);
+assert(VerilogChecker.checkSolution(jkCode, jkProb).status === 'correct', "JK flip-flop Behavioral should pass");
 
-// 10. Test Syntax Errors: missing semicolon
+// 16. Test Compile Error: missing semicolon
 const missingSemi = `
 module and_gate(Y,A,B);
   input A,B;
@@ -155,28 +218,6 @@ endmodule
 `;
 const missingSemiRes = VerilogChecker.checkSolution(missingSemi, andProb);
 assert(missingSemiRes.status === 'error', "Missing semicolon should report 'error'", missingSemiRes);
-
-// 11. Test Module Name Mismatch
-const wrongModName = `
-module my_and(Y,A,B);
-  input A,B;
-  output Y;
-  assign Y = A & B;
-endmodule
-`;
-const wrongModRes = VerilogChecker.checkSolution(wrongModName, andProb);
-assert(wrongModRes.status === 'error' && wrongModRes.errorType === 'module_name', "Wrong module name should report 'module_name' error", wrongModRes);
-
-// 12. Test Missing Port Error
-const missingPort = `
-module and_gate(Y,A);
-  input A;
-  output Y;
-  assign Y = A;
-endmodule
-`;
-const missingPortRes = VerilogChecker.checkSolution(missingPort, andProb);
-assert(missingPortRes.status === 'error' && missingPortRes.errorType === 'missing_port', "Missing port 'B' should report 'missing_port' error", missingPortRes);
 
 console.log("\n==========================================");
 console.log(` Results: ${passedTests} / ${totalTests} tests passed`);

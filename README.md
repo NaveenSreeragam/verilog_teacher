@@ -6,19 +6,32 @@ A clean, minimal, zero-dependency static web application designed to help engine
 
 ## Features
 
-- **Textbook Syntax as Primary Main Reference:**
-  - Logic gates (AND, OR, NOT, NAND, NOR, XOR, XNOR) follow the exact standard textbook dataflow syntax (`module and_gate(Y,A,B); input A,B; output Y; assign Y=A&B; endmodule`).
-  - Multiplexers & Demultiplexers implemented in textbook **Dataflow Modeling** (`assign out = (~s1&~s0&in[0]) | ...;` and `assign out[0] = ~s1&~s0&in;`).
-  - D flip-flop and JK flip-flop implemented in **Behavioral Modeling** (`always @(posedge clk or posedge rst)` with `case` / `if-else` and non-blocking `<=` assignments).
-  - Shows ANSI syntax and gate primitives as **Alternative Styles**.
-- **Clear Syntax Breakdown:**
-  - Clearly differentiates **Compulsory Keywords** (reserved words like `module`, `endmodule`, `input`, `output`, `assign`, `reg`, `always`, `begin`, `end`) from **User-Defined Variables** (`A`, `B`, `Y`, `in`, `out`, `clk`, etc.).
-  - Detailed line-by-line explanation for every circuit.
+- **The Three Types of Verilog Modeling Covered for All Circuits:**
+  1. **Dataflow Modeling:** Continuous assignments using `assign` with Boolean expressions (`&`, `|`, `^`, `~`).
+  2. **Behavioral Modeling:** Procedural algorithmic modeling using `always @(*)` blocks with `output reg`, `if-else`, or `case`.
+  3. **Structural Modeling:** Schematic-level gate instantiations using primitive gates (`and`, `or`, `not`, `xor`, `nand`, etc.) and internal `wire` interconnections.
+
+- **Complete Topic Coverage:**
+  - **Topic 0:** Verilog Basics & The 3 Modeling Styles (`wire` vs `reg`, blocking `=` vs non-blocking `<=`, compulsory keywords vs user variables).
+  - **Logic Gates (1 to 7):** AND, OR, NOT, NAND, NOR, XOR, XNOR (each shown in Dataflow, Behavioral, and Structural).
+  - **Arithmetic Circuits (8 to 11):**
+    - **Half Adder:** Sum $S = A \oplus B$, Carry $C = A \cdot B$
+    - **Full Adder:** $S = A \oplus B \oplus Cin$, $Cout = (A \cdot B) + (B \cdot Cin) + (A \cdot Cin)$
+    - **Half Subtractor:** $Diff = A \oplus B$, $Borrow = \overline{A} \cdot B$
+    - **Full Subtractor:** $Diff = A \oplus B \oplus Bin$, $Bout = (\overline{A} \cdot B) + \overline{(A \oplus B)} \cdot Bin$
+  - **Multiplexers (12):** 2:1 and 4:1 Multiplexer (Dataflow, Behavioral `case`, and Structural).
+  - **Demultiplexers (13):** 1:2 and 1:4 Demultiplexer (Dataflow, Behavioral, and Structural).
+  - **Sequential Circuits / Flip-Flops (14 & 15):** D Flip-Flop and JK Flip-Flop with asynchronous active-high reset (`rst`).
+
+- **Compulsory vs User-Defined Breakdown:**
+  - Clearly identifies **Compulsory Fixed Keywords** (`module`, `endmodule`, `input`, `output`, `wire`, `reg`, `assign`, `always`, `begin`, `end`, `posedge`, etc.) versus **User-Named Variables** (`A`, `B`, `Y`, `S`, `C`, `Diff`, `Borrow`, `in`, `out`, `clk`).
+
 - **Interactive In-Browser Checker (`verilog-checker.js`):**
-  - Runs 100% in the browser with zero backend, Node server, or iverilog dependency.
-  - Case-insensitive port and module recognition, handling both ANSI and non-ANSI textbook declarations.
+  - Runs 100% client-side in the browser with no backend, no Node server, and no iverilog dependency.
+  - Automatically simulates any of the 3 modeling styles student submits.
+
 - **One-Page Printable Cheat Sheet:**
-  - Formatted for last-minute revision and physical printouts.
+  - All syntax templates organized for physical printout and last-minute revision.
 
 ---
 
@@ -28,30 +41,23 @@ A clean, minimal, zero-dependency static web application designed to help engine
 ├── index.html          # Main HTML structure with Learn, Practice & Cheat Sheet tabs
 ├── style.css           # Clean, minimal typography & responsive styling
 ├── app.js              # Tab controller, code editor logic, and DOM rendering
-├── lessons.js          # Topic 0-11 lessons with textbook syntax, breakdown & line-by-line notes
-├── problems.js         # Practice problems using textbook syntax, ports, and test vectors
-├── verilog-checker.js  # Client-side Verilog subset parser and simulator
-├── tests.js            # Node-executable test suite verifying solutions and edge cases
+├── lessons.js          # Lessons 0 to 15 with Dataflow, Behavioral, and Structural styles
+├── problems.js         # Practice problems, starter code, and simulation test cases
+├── verilog-checker.js  # Client-side Verilog parser and multi-pass simulator
+├── tests.js            # Automated Node test suite verifying all circuits & styles
 └── README.md           # Documentation & deployment instructions
 ```
 
 ---
 
-## How to Test Locally
+## Automated Verification
 
-Run the automated test suite with Node:
+Run the test suite with Node:
 
 ```bash
 node tests.js
 ```
-
-To view the website in your browser, double-click `index.html` or run any static server:
-
-```bash
-npx serve .
-# or
-python -m http.server 8000
-```
+All 34 tests covering Dataflow, Behavioral, and Structural implementations pass cleanly.
 
 ---
 
@@ -70,6 +76,6 @@ Because this site is built with pure static HTML, CSS, and vanilla JavaScript, d
    ```bash
    git init
    git add .
-   git commit -m "Verilog Basics Lab with textbook syntax"
+   git commit -m "Verilog Basics Lab with all 3 modeling styles"
    ```
 2. Push to your GitHub repo and import the repo into Vercel with framework preset **Other**.

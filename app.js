@@ -122,11 +122,11 @@
       var userItems = lesson.userElements.map(function (item) { return '<li>' + item + '</li>'; }).join('');
 
       syntaxBreakdownHtml = `
-        <div class="callout callout-info" style="margin-top: 1rem;">
+        <div class="callout callout-info" style="margin-top: 1.25rem;">
           <div class="callout-title">🔍 Syntax Breakdown: Compulsory Keywords vs. User Variables</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
             <div>
-              <strong style="color: #0969da;">Fixed / Compulsory Elements (Reserved):</strong>
+              <strong style="color: #0969da;">Fixed / Compulsory Elements (Reserved by Verilog):</strong>
               <ul style="padding-left: 1.2rem; margin-top: 0.25rem;">${compItems}</ul>
             </div>
             <div>
@@ -134,6 +134,37 @@
               <ul style="padding-left: 1.2rem; margin-top: 0.25rem;">${userItems}</ul>
             </div>
           </div>
+        </div>
+      `;
+    }
+
+    // Three Modeling Styles Display
+    var stylesHtml = '';
+    if (lesson.styles) {
+      var dfCode = lesson.styles.dataflow ? `
+        <div style="margin-bottom: 1rem;">
+          <h4 style="color: #0969da; margin-bottom: 0.25rem;">1. Dataflow Modeling (using assign)</h4>
+          <pre><code>${escapeHtml(lesson.styles.dataflow)}</code></pre>
+        </div>` : '';
+
+      var behCode = lesson.styles.behavioral ? `
+        <div style="margin-bottom: 1rem;">
+          <h4 style="color: #1a7f37; margin-bottom: 0.25rem;">2. Behavioral Modeling (using always procedural block)</h4>
+          <pre><code>${escapeHtml(lesson.styles.behavioral)}</code></pre>
+        </div>` : '';
+
+      var structCode = lesson.styles.structural ? `
+        <div style="margin-bottom: 1rem;">
+          <h4 style="color: #6a4b00; margin-bottom: 0.25rem;">3. Structural Modeling (using gate primitives / internal wires)</h4>
+          <pre><code>${escapeHtml(lesson.styles.structural)}</code></pre>
+        </div>` : '';
+
+      stylesHtml = `
+        <div style="margin-top: 1.25rem;">
+          <h3>Three Types of Verilog Modeling</h3>
+          ${dfCode}
+          ${behCode}
+          ${structCode}
         </div>
       `;
     }
@@ -160,15 +191,9 @@
       <h3>Truth / Characteristic Table</h3>
       ${truthTableHtml}
 
-      <h3>Main Textbook Syntax (${lesson.syntaxType || "Dataflow Modeling"})</h3>
-      <pre><code>${escapeHtml(lesson.verilogCode1)}</code></pre>
+      ${stylesHtml}
 
       ${syntaxBreakdownHtml}
-
-      ${lesson.verilogCode2 ? `
-        <h3>Alternative Syntax (ANSI / Gate Primitives / Other Styles)</h3>
-        <pre><code>${escapeHtml(lesson.verilogCode2)}</code></pre>
-      ` : ''}
 
       <h3>Line by line Explanation</h3>
       <ol>${lineByLineHtml}</ol>
@@ -378,102 +403,193 @@
   function initCheatSheet() {
     var cheatItems = [
       {
-        title: "Compulsory vs User Names Rule",
-        code: `// COMPULSORY FIXED KEYWORDS (DO NOT CHANGE):
-// module, endmodule, input, output, wire, reg, assign, always, begin, end, posedge
+        title: "The 3 Modeling Styles Summary",
+        code: `// 1. DATAFLOW: assign Y = A & B; (wire output)
+// 2. BEHAVIORAL: always @(*) Y = A & B; (output reg Y)
+// 3. STRUCTURAL: and g1(Y, A, B); (wires & primitives)`
+      },
+      {
+        title: "1. AND Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = A & B;
 
-// USER-NAMED VARIABLES (CAN BE CUSTOMIZED):
-// module name (e.g. and_gate, mux4_1)
-// port names (e.g. A, B, Y, s0, s1, in, out)`
-      },
-      {
-        title: "1. AND Gate (Textbook Main)",
-        code: `module and_gate(Y,A,B);
-input A,B;
-output Y;
-assign Y=A&B;
-endmodule
+// Behavioral:
+always @(*) Y = A & B; // output reg Y;
 
-// Alternative (ANSI Style):
-// module and_gate(input A, input B, output Y);
-//   assign Y = A & B;
-// endmodule`
+// Structural:
+and g1(Y, A, B);`
       },
       {
-        title: "2. OR Gate (Textbook Main)",
-        code: `module or_gate(A,B,Y);
-input A,B;
-output Y;
-assign Y=A|B;
-endmodule`
+        title: "2. OR Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = A | B;
+
+// Behavioral:
+always @(*) Y = A | B; // output reg Y;
+
+// Structural:
+or g1(Y, A, B);`
       },
       {
-        title: "3. NOT Gate (Textbook Main)",
-        code: `module not_gate(A,Y);
-input A;
-output Y;
-assign Y=~A;
-endmodule`
+        title: "3. NOT Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = ~A;
+
+// Behavioral:
+always @(*) Y = ~A; // output reg Y;
+
+// Structural:
+not n1(Y, A);`
       },
       {
-        title: "4. NAND Gate (Textbook Main)",
-        code: `module nand_gate(A,B,Y);
-input A,B;
-output Y;
-assign Y=~(A&B);
-endmodule`
+        title: "4. NAND Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = ~(A & B);
+
+// Behavioral:
+always @(*) Y = ~(A & B); // output reg Y;
+
+// Structural:
+nand g1(Y, A, B);`
       },
       {
-        title: "5. NOR Gate (Textbook Main)",
-        code: `module nor_gate(A,B,Y);
-input A,B;
-output Y;
-assign Y=~(A|B);
-endmodule`
+        title: "5. NOR Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = ~(A | B);
+
+// Behavioral:
+always @(*) Y = ~(A | B); // output reg Y;
+
+// Structural:
+nor g1(Y, A, B);`
       },
       {
-        title: "6. XOR Gate (Textbook Main)",
-        code: `module xor_gate(A,B,Y);
-input A,B;
-output Y;
-assign Y=A^B;
-endmodule`
+        title: "6. XOR Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = A ^ B;
+
+// Behavioral:
+always @(*) Y = A ^ B; // output reg Y;
+
+// Structural:
+xor g1(Y, A, B);`
       },
       {
-        title: "7. XNOR Gate (Textbook Main)",
-        code: `module xnor_gate(A,B,Y);
-input A,B;
-output Y;
-assign Y=A~^B;
-endmodule`
+        title: "7. XNOR Gate (All 3 Styles)",
+        code: `// Dataflow:
+assign Y = A ~^ B;
+
+// Behavioral:
+always @(*) Y = A ~^ B; // output reg Y;
+
+// Structural:
+xnor g1(Y, A, B);`
       },
       {
-        title: "8. 4:1 Multiplexer (Dataflow Main)",
-        code: `module mux4_1(in,s0,s1,out);
-input s0,s1;
-input [3:0]in;
-output out;
-assign out=(~s1&~s0&in[0])|(~s1&s0&in[1])|(s1&~s0&in[2])|(s1&s0&in[3]);
-endmodule`
+        title: "8. Half Adder (All 3 Styles)",
+        code: `// Dataflow:
+assign S = A ^ B;
+assign C = A & B;
+
+// Behavioral:
+always @(*) begin S = A ^ B; C = A & B; end // output reg S, C;
+
+// Structural:
+xor g1(S, A, B);
+and g2(C, A, B);`
       },
       {
-        title: "9. 1:4 Demultiplexer (Dataflow Main)",
-        code: `module demux1_4(in,s0,s1,out);
-input s0,s1,in;
-output [3:0]out;
-assign out[0]=~s1&~s0&in;
-assign out[1]=~s1&s0&in;
-assign out[2]=s1&~s0&in;
-assign out[3]=s1&s0&in;
-endmodule`
+        title: "9. Full Adder (All 3 Styles)",
+        code: `// Dataflow:
+assign S = A ^ B ^ Cin;
+assign Cout = (A & B) | (B & Cin) | (A & Cin);
+
+// Behavioral:
+always @(*) begin S = A ^ B ^ Cin; Cout = (A & B) | (B & Cin) | (A & Cin); end
+
+// Structural:
+wire w1, w2, w3;
+xor g1(w1, A, B);
+xor g2(S, w1, Cin);
+and g3(w2, w1, Cin);
+and g4(w3, A, B);
+or  g5(Cout, w2, w3);`
       },
       {
-        title: "10. D Flip-Flop (Behavioral Main)",
+        title: "10. Half Subtractor (All 3 Styles)",
+        code: `// Dataflow:
+assign Diff = A ^ B;
+assign Borrow = ~A & B;
+
+// Behavioral:
+always @(*) begin Diff = A ^ B; Borrow = ~A & B; end
+
+// Structural:
+wire w1;
+xor g1(Diff, A, B);
+not g2(w1, A);
+and g3(Borrow, w1, B);`
+      },
+      {
+        title: "11. Full Subtractor (All 3 Styles)",
+        code: `// Dataflow:
+assign Diff = A ^ B ^ Bin;
+assign Bout = (~A & B) | (~(A ^ B) & Bin);
+
+// Behavioral:
+always @(*) begin Diff = A ^ B ^ Bin; Bout = (~A & B) | (~(A ^ B) & Bin); end
+
+// Structural:
+wire w1, w2, w3, notA, w4;
+xor g1(w1, A, B);
+xor g2(Diff, w1, Bin);
+not g3(w2, w1);
+and g4(w3, w2, Bin);
+not g5(notA, A);
+and g6(w4, notA, B);
+or  g7(Bout, w3, w4);`
+      },
+      {
+        title: "12. 4:1 Multiplexer (Dataflow & Behavioral)",
+        code: `// Dataflow:
+assign out = (~s1 & ~s0 & in[0]) | (~s1 & s0 & in[1]) |
+             (s1 & ~s0 & in[2])  | (s1 & s0 & in[3]);
+
+// Behavioral:
+always @(*) begin
+  case ({s1, s0})
+    2'b00: out = in[0];
+    2'b01: out = in[1];
+    2'b10: out = in[2];
+    2'b11: out = in[3];
+  endcase
+end`
+      },
+      {
+        title: "13. 1:4 Demultiplexer (Dataflow & Behavioral)",
+        code: `// Dataflow:
+assign out[0] = ~s1 & ~s0 & in;
+assign out[1] = ~s1 &  s0 & in;
+assign out[2] =  s1 & ~s0 & in;
+assign out[3] =  s1 &  s0 & in;
+
+// Behavioral:
+always @(*) begin
+  out = 4'b0000;
+  case ({s1, s0})
+    2'b00: out[0] = in;
+    2'b01: out[1] = in;
+    2'b10: out[2] = in;
+    2'b11: out[3] = in;
+  endcase
+end`
+      },
+      {
+        title: "14. D Flip-Flop (Behavioral)",
         code: `module d_ff(clk,rst,d,q);
 input clk,rst,d;
 output reg q;
-always @(posedge clk or posedge rst)
-begin
+always @(posedge clk or posedge rst) begin
   if (rst)
     q <= 1'b0;
   else
@@ -482,16 +598,14 @@ end
 endmodule`
       },
       {
-        title: "11. JK Flip-Flop (Behavioral Main)",
+        title: "15. JK Flip-Flop (Behavioral)",
         code: `module jk_ff(clk,rst,j,k,q);
 input clk,rst,j,k;
 output reg q;
-always @(posedge clk or posedge rst)
-begin
+always @(posedge clk or posedge rst) begin
   if (rst)
     q <= 1'b0;
-  else
-  begin
+  else begin
     case ({j, k})
       2'b00: q <= q;       // Hold
       2'b01: q <= 1'b0;    // Reset
