@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verilog Basics Lab</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="navbar">
+      <div class="brand">
+        <h1>Verilog Basics Lab</h1>
+        <span class="badge">Static Browser Lab</span>
+      </div>
+      <nav class="nav-tabs">
+        <button class="nav-tab-btn active" data-tab="learn">Learn</button>
+        <button class="nav-tab-btn" data-tab="practice">Practice</button>
+        <button class="nav-tab-btn" data-tab="cheatsheet">Cheat Sheet</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- TAB 1: LEARN -->
+    <section id="tab-learn" class="tab-pane active">
+      <div class="split-view">
+        <aside class="sidebar">
+          <h3>Topics</h3>
+          <ul id="learn-topic-list" class="item-list">
+            <!-- Populated dynamically by app.js -->
+          </ul>
+        </aside>
+
+        <article id="learn-content" class="content-panel">
+          <!-- Lesson content rendered dynamically -->
+        </article>
+      </div>
+    </section>
+
+    <!-- TAB 2: PRACTICE -->
+    <section id="tab-practice" class="tab-pane">
+      <div class="split-view">
+        <aside class="sidebar">
+          <h3>Problems</h3>
+          <ul id="practice-problem-list" class="item-list">
+            <!-- Populated dynamically by app.js -->
+          </ul>
+        </aside>
+
+        <div class="content-panel">
+          <div id="practice-details">
+            <!-- Problem description, required ports, etc. -->
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-toolbar">
+              <button id="btn-check" class="btn btn-primary">Check My Code</button>
+              <button id="btn-solution" class="btn">Show Solution</button>
+              <button id="btn-reset" class="btn">Reset</button>
+            </div>
+
+            <textarea id="code-editor" class="code-editor" spellcheck="false" placeholder="Write your Verilog code here..."></textarea>
+            <p class="editor-note">This checker supports basic Verilog used in lab exams: gates, assign, always blocks and flip-flops. Use the exact module and port names shown.</p>
+
+            <div id="result-box" class="result-box">
+              <div id="result-header" class="result-header"></div>
+              <div id="result-message"></div>
+              <div id="result-table-container"></div>
+              <div id="result-hint-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CHEAT SHEET -->
+    <section id="tab-cheatsheet" class="tab-pane">
+      <div class="content-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+          <div>
+            <h2>Verilog Quick Cheat Sheet</h2>
+            <p class="lead" style="margin-bottom: 0;">Last-minute revision guide and syntax reference for lab exams.</p>
+          </div>
+          <button class="btn btn-sm" onclick="window.print()">Print Cheat Sheet</button>
+        </div>
+
+        <div class="cheatsheet-grid" id="cheatsheet-content">
+          <!-- Populated by app.js with templates for all 11 topics -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scripts -->
+  <script src="verilog-checker.js"></script>
+  <script src="problems.js"></script>
+  <script src="lessons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

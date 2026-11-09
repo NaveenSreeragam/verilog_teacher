@@ -1,0 +1,504 @@
+/* Verilog Basics Lab - Clean, minimal CSS */
+:root {
+  --bg-color: #ffffff;
+  --surface-color: #f9f9fb;
+  --border-color: #e2e4e8;
+  --text-main: #1f2328;
+  --text-muted: #59636e;
+  --primary: #0969da;
+  --primary-hover: #0856b3;
+  --success-bg: #dafbe1;
+  --success-text: #1a7f37;
+  --success-border: #4ac26b;
+  --error-bg: #ffebe9;
+  --error-text: #cf222e;
+  --error-border: #ff8182;
+  --code-bg: #f6f8fa;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Header & Top Navigation */
+header {
+  border-bottom: 1px solid var(--border-color);
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.brand h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.brand .badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.45rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav-tab-btn:hover {
+  background: var(--surface-color);
+  color: var(--text-main);
+}
+
+.nav-tab-btn.active {
+  background: #eef2f8;
+  border-color: var(--border-color);
+  color: var(--primary);
+}
+
+/* Main Container */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Two-column Layout for Learn & Practice */
+.split-view {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.sidebar {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.sidebar h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.item-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.item-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.item-btn:hover {
+  background: #eef1f5;
+}
+
+.item-btn.active {
+  background: #e1e9f4;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.content-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1.5rem;
+  min-height: 500px;
+}
+
+/* Typography & Content Sections */
+.content-panel h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.content-panel h3 {
+  font-size: 1.15rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.content-panel p {
+  margin-bottom: 0.85rem;
+}
+
+.content-panel .lead {
+  font-size: 1.05rem;
+  color: #333;
+}
+
+.content-panel ul, .content-panel ol {
+  padding-left: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.content-panel li {
+  margin-bottom: 0.35rem;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0.75rem 0 1.25rem;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+/* Truth Tables */
+table.data-table {
+  width: 100%;
+  max-width: 600px;
+  border-collapse: collapse;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 0.9rem;
+}
+
+table.data-table th,
+table.data-table td {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+
+table.data-table th {
+  background: var(--surface-color);
+  font-weight: 600;
+}
+
+table.data-table tr:nth-child(even) {
+  background: #fbfcfd;
+}
+
+/* Callout Boxes */
+.callout {
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  border: 1px solid var(--border-color);
+  font-size: 0.92rem;
+}
+
+.callout-title {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.callout-warning {
+  background: #fff8e6;
+  border-color: #ffd37a;
+  color: #6a4b00;
+}
+
+.callout-info {
+  background: #f0f7ff;
+  border-color: #b9d8ff;
+  color: #0b4c8c;
+}
+
+/* Action Buttons */
+.btn {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--surface-color);
+}
+
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.55rem;
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Monospace Code Editor */
+.code-editor {
+  width: 100%;
+  min-height: 250px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text-main);
+  resize: vertical;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code-editor:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.2);
+}
+
+.editor-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+/* Verification Result Box */
+.result-box {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  display: none;
+}
+
+.result-box.correct {
+  display: block;
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.result-box.wrong {
+  display: block;
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.result-box.error {
+  display: block;
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+.result-header {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.result-hint {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  color: #555;
+  background: #ffffff;
+  padding: 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+/* Result Table */
+.res-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  background: #ffffff;
+  color: var(--text-main);
+  font-size: 0.88rem;
+}
+
+.res-table th,
+.res-table td {
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+}
+
+.res-table th {
+  background: var(--surface-color);
+}
+
+.res-table tr.row-mismatch {
+  background: #ffebe9;
+  font-weight: 600;
+  color: #cf222e;
+}
+
+.res-table tr.row-pass {
+  background: #dafbe1;
+}
+
+/* Cheat Sheet */
+.cheatsheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.cheat-card {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.cheat-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.25rem;
+}
+
+.cheat-card pre {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  padding: 0.65rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .split-view {
+    grid-template-columns: 1fr;
+  }
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sidebar {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+}
+
+/* Print styles for Cheat sheet */
+@media print {
+  header, .sidebar, .editor-toolbar, .result-box, .nav-tabs {
+    display: none !important;
+  }
+  body, main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .tab-pane {
+    display: none !important;
+  }
+  #tab-cheatsheet {
+    display: block !important;
+  }
+  .cheat-card {
+    page-break-inside: avoid;
+    border: 1px solid #999;
+    margin-bottom: 1rem;
+  }
+}
+
