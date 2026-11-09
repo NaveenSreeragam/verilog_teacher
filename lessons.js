@@ -21,45 +21,92 @@
       title: "0. Verilog Basics & 3 Modeling Styles",
       isBasics: true,
       contentHtml: `
-        <h2>0. Verilog Basics & The 3 Modeling Styles</h2>
-        <p class="lead">Welcome! Verilog is a <strong>Hardware Description Language (HDL)</strong> used to design, simulate, and implement digital electronic circuits. In digital design and lab exams, every circuit can be described using <strong>Three Different Modeling Styles</strong>:</p>
+        <h2>0. Verilog Basics: Absolute Beginner Guide</h2>
+        <p class="lead">If you have never written a single line of Verilog before, don't worry! This guide explains every concept in simple, everyday English with clear examples so you can ace your lab exam.</p>
 
         <div class="callout callout-info" style="margin: 1.25rem 0;">
-          <div class="callout-title">🏛️ The Three Fundamental Modeling Styles in Verilog</div>
-          <ol style="margin-top: 0.5rem; padding-left: 1.2rem;">
-            <li><strong>1. Dataflow Modeling (Continuous Assignment):</strong>
-              Uses the compulsory <code>assign</code> keyword with Boolean algebra operators (<code>&</code>, <code>|</code>, <code>^</code>, <code>~</code>, etc.). Hardware is described by specifying how data flows directly from inputs to outputs.
-              <br><em>Example:</em> <code>assign Y = A & B;</code>
-            </li>
-            <li style="margin-top: 0.5rem;"><strong>2. Behavioral Modeling (Algorithmic / Procedural):</strong>
-              Uses an <code>always @(...)</code> block with procedural statements like <code>if-else</code> or <code>case</code>. The output <strong>must</strong> be declared as <code>reg</code> because it holds state inside procedural blocks.
-              <br><em>Example:</em> <code>always @(*) begin Y = A & B; end</code>
-            </li>
-            <li style="margin-top: 0.5rem;"><strong>3. Structural Modeling (Gate-Level / Interconnection):</strong>
-              Explicitly connects built-in primitive gate instances (<code>and</code>, <code>or</code>, <code>not</code>, <code>xor</code>, etc.) or sub-modules using interconnecting <code>wire</code> declarations. This mirrors physical schematic wire connections.
-              <br><em>Example:</em> <code>and g1(Y, A, B);</code>
-            </li>
-          </ol>
+          <div class="callout-title">💡 What is Verilog? (Hardware vs. Software)</div>
+          <p>In languages like C or Python, lines of code run one after another, top to bottom, on a CPU. <strong>Verilog is completely different:</strong> it does NOT run on a CPU. Instead, Verilog is a <em>blueprint</em> for physical electronic circuits.</p>
+          <p>When you place 3 physical gates on a breadboard or chip, electricity flows through all 3 gates at the exact same instant. Verilog code describes physical hardware components running simultaneously in parallel!</p>
         </div>
 
-        <div class="callout callout-warning">
-          <div class="callout-title">🔑 Compulsory Reserved Keywords vs. User Variables (Exam Rule)</div>
-          <ul>
-            <li><strong>Compulsory Fixed Keywords:</strong> <code>module</code>, <code>endmodule</code>, <code>input</code>, <code>output</code>, <code>wire</code>, <code>reg</code>, <code>assign</code>, <code>always</code>, <code>begin</code>, <code>end</code>, <code>posedge</code>, <code>case</code>, <code>endcase</code>. Never change or misspell these!</li>
-            <li><strong>User-Defined Variables:</strong> Module names (e.g. <code>and_gate</code>, <code>half_adder</code>), port names (e.g. <code>A</code>, <code>B</code>, <code>Y</code>, <code>S</code>, <code>C</code>, <code>clk</code>, <code>rst</code>), and internal wires (e.g. <code>w1</code>, <code>w2</code>).</li>
-          </ul>
-        </div>
-
-        <h3>wire vs reg Rule</h3>
+        <h3>1. What is a <code>module</code>?</h3>
+        <p>Think of a <strong>module</strong> as a physical microchip or IC (like an IC 7408 AND gate chip):</p>
         <ul>
-          <li><strong><code>wire</code>:</strong> Used for <strong>Dataflow</strong> (continuous <code>assign</code>) and <strong>Structural</strong> (connecting gate pins). Cannot store values.</li>
-          <li><strong><code>reg</code>:</strong> Required for any output assigned inside a <strong>Behavioral</strong> (<code>always</code>) block.</li>
+          <li>The <strong>header</strong> <code>module my_chip(A, B, Y);</code> lists the metal pins sticking out of the chip.</li>
+          <li>The <strong>body</strong> describes what logic or gates are inside the chip.</li>
+          <li>The end <strong><code>endmodule</code></strong> tells the compiler "this is the end of the chip". (Notice: <strong>never</strong> put a semicolon after <code>endmodule</code>!).</li>
         </ul>
 
-        <h3>Blocking (<code>=</code>) vs Non-Blocking (<code>&lt;=</code>)</h3>
+        <h3>2. Understanding Inputs: 1-Bit Pins vs Multi-Bit Buses (Vectors)</h3>
+        <p>This is where beginners get confused most often. Let's make it crystal clear:</p>
         <ul>
-          <li><strong><code>=</code> (Blocking):</strong> Used in combinational <code>always @(*)</code> blocks.</li>
-          <li><strong><code>&lt;=</code> (Non-Blocking):</strong> Used in sequential clocked flip-flops (<code>always @(posedge clk or posedge rst)</code>) to evaluate updates concurrently.</li>
+          <li><strong>Single-bit inputs &mdash; <code>input s0, s1;</code></strong>
+            <br>Here, <code>s0</code> is <strong>one single wire</strong> carrying either a <code>0</code> (0V) or <code>1</code> (5V). <code>s1</code> is another separate single wire.
+            <br><em>Real-life example:</em> Think of two separate wall light switches in your room. Each switch is either ON (1) or OFF (0).
+          </li>
+          <li style="margin-top: 0.6rem;"><strong>Multi-bit bus (vector) &mdash; <code>input [3:0] in;</code></strong>
+            <br>This is NOT a single wire! The <code>[3:0]</code> notation means a bundle of <strong>4 wires</strong> grouped together under the single name <code>in</code>.
+            <br>The 4 individual wires inside this cable are called:
+            <ul>
+              <li><code>in[0]</code> &mdash; Wire #0 (the 1st data wire)</li>
+              <li><code>in[1]</code> &mdash; Wire #1 (the 2nd data wire)</li>
+              <li><code>in[2]</code> &mdash; Wire #2 (the 3rd data wire)</li>
+              <li><code>in[3]</code> &mdash; Wire #3 (the 4th data wire)</li>
+            </ul>
+            <em>Real-life example:</em> Think of a 4-wire ribbon cable or a 4-lane highway. <code>in</code> is the whole highway; <code>in[0]</code> is lane 0, <code>in[1]</code> is lane 1, etc.
+          </li>
+          <li style="margin-top: 0.6rem;"><strong>Multi-bit outputs &mdash; <code>output [3:0] out;</code></strong>
+            <br>Just like above, this creates a 4-wire bundle for outputs: <code>out[0]</code>, <code>out[1]</code>, <code>out[2]</code>, and <code>out[3]</code>.
+          </li>
+        </ul>
+
+        <h3>3. <code>wire</code> vs <code>reg</code> (The Golden Rule)</h3>
+        <ul>
+          <li><strong><code>wire</code>:</strong> A regular copper wire. It has no memory. If you unplug the voltage, the signal disappears immediately. Used whenever you use <code>assign</code> statements or structural gate primitives.</li>
+          <li><strong><code>reg</code>:</strong> Short for register. It can <strong>remember</strong> its value like a tiny memory cell. In Verilog, any output modified inside an <code>always</code> block <strong>must</strong> be declared as <code>reg</code> (e.g. <code>output reg Y;</code>).</li>
+        </ul>
+
+        <h3>4. The Three Types of Verilog Writing (Modeling Styles)</h3>
+        <p>In lab exams, professors ask you to write circuits in one of these 3 styles:</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1rem 0;">
+          <div style="border: 1px solid #c8e1ff; background: #f0f7ff; padding: 0.85rem; border-radius: 6px;">
+            <strong style="color: #0969da; font-size: 1rem;">1. Dataflow Modeling</strong>
+            <p style="font-size: 0.88rem; margin: 0.4rem 0;">You write the mathematical Boolean formula directly using the keyword <code>assign</code>.</p>
+            <code>assign Y = A & B;</code>
+            <p style="font-size: 0.82rem; color: #555; margin-top: 0.4rem;"><em>Meaning:</em> "Continuously calculate A AND B and send the voltage to wire Y."</p>
+          </div>
+          <div style="border: 1px solid #b4e5be; background: #f2fcf4; padding: 0.85rem; border-radius: 6px;">
+            <strong style="color: #1a7f37; font-size: 1rem;">2. Behavioral Modeling</strong>
+            <p style="font-size: 0.88rem; margin: 0.4rem 0;">You describe the circuit's behavior algorithmically like software using an <code>always</code> block and <code>if/else</code> or <code>case</code>.</p>
+            <code>always @(*) Y = A & B;</code>
+            <p style="font-size: 0.82rem; color: #555; margin-top: 0.4rem;"><em>Meaning:</em> "Whenever any input changes, run this block to update Y." Output MUST be <code>reg</code>!</p>
+          </div>
+          <div style="border: 1px solid #ffd37a; background: #fffcf2; padding: 0.85rem; border-radius: 6px;">
+            <strong style="color: #8c5d00; font-size: 1rem;">3. Structural Modeling</strong>
+            <p style="font-size: 0.88rem; margin: 0.4rem 0;">You connect physical gates from a library (like placing chips on a breadboard) and connect pins with wires.</p>
+            <code>and g1(Y, A, B);</code>
+            <p style="font-size: 0.82rem; color: #555; margin-top: 0.4rem;"><em>Meaning:</em> "Take an AND gate named g1; its output pin is Y, and its input pins are A and B."</p>
+          </div>
+        </div>
+
+        <h3>5. Verilog Math Operators</h3>
+        <ul>
+          <li><code>&</code> &mdash; Bitwise AND (Outputs 1 only if both are 1).</li>
+          <li><code>|</code> &mdash; Bitwise OR (Outputs 1 if at least one is 1).</li>
+          <li><code>~</code> &mdash; Bitwise NOT / Inverter (Flips 0 to 1 and 1 to 0).</li>
+          <li><code>^</code> &mdash; Bitwise XOR (Outputs 1 if inputs are different; 0 if equal).</li>
+          <li><code>~^</code> or <code>^~</code> &mdash; Bitwise XNOR (Outputs 1 if inputs are equal).</li>
+        </ul>
+
+        <h3>6. Literals (Numbers) in Verilog</h3>
+        <p>Format: <code>&lt;number_of_bits&gt;'b&lt;binary_value&gt;</code></p>
+        <ul>
+          <li><code>1'b0</code>: A 1-bit binary number with value <code>0</code>.</li>
+          <li><code>1'b1</code>: A 1-bit binary number with value <code>1</code>.</li>
+          <li><code>2'b00</code>: A 2-bit binary number <code>00</code> (decimal 0).</li>
+          <li><code>2'b01</code>: A 2-bit binary number <code>01</code> (decimal 1).</li>
+          <li><code>4'b0000</code>: A 4-bit binary bundle of all zeros.</li>
         </ul>
       `
     },

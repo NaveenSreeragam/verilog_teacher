@@ -1,7 +1,7 @@
 /**
  * Main application logic for Verilog Basics Lab.
  * Manages tabs, lesson navigation, practice problems, code editing, and rendering checker results.
- * Now includes Syntax Highlighting for built-in keywords and interactive hover line explanations.
+ * Features granular, crystal-clear line-by-line hover explanations designed specifically for absolute beginners.
  */
 
 (function () {
@@ -69,114 +69,267 @@
     }
   });
 
-  // 3. Syntax Highlighting & Line Explanation Generator
+  // 3. Beginner-Friendly Granular Line Explanation Generator
   function getLineExplanation(line, circuitTitle) {
     var trimmed = line.trim();
     if (!trimmed) return "";
 
     // Comments
     if (trimmed.startsWith("//")) {
-      return "Comment (ignored by synthesizer / compiler).";
+      return "Note for humans: The compiler completely ignores this line.";
     }
 
-    // Module header
-    if (trimmed.startsWith("module ")) {
-      return "Declares the hardware module name and external interface port list.";
+    // Module declaration
+    var modMatch = trimmed.match(/^module\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\);/);
+    if (modMatch) {
+      var mName = modMatch[1];
+      var pList = modMatch[2].trim();
+      return "Starts module '" + mName + "' with pins (" + pList + "). Like putting a new chip on a breadboard.";
     }
 
     // Endmodule
     if (trimmed === "endmodule" || trimmed.startsWith("endmodule")) {
-      return "Closes and terminates the module definition.";
+      return "Finished building this chip. Never put a semicolon after endmodule!";
     }
 
-    // Ports
-    if (trimmed.startsWith("input ") && trimmed.includes("output")) {
-      return "ANSI port list declaring inputs and outputs together.";
-    }
-    if (trimmed.startsWith("input ")) {
-      return "Declares incoming input signal pins to this circuit.";
-    }
-    if (trimmed.startsWith("output reg ")) {
-      return "Declares output pins as 'reg' because they are assigned procedurally inside an always block.";
-    }
-    if (trimmed.startsWith("output ")) {
-      return "Declares outgoing output signal pins from this circuit.";
-    }
-    if (trimmed.startsWith("wire ")) {
-      return "Declares internal interconnecting wires between intermediate logic gates.";
+    // MULTI-BIT BUS INPUTS vs SINGLE-BIT INPUTS (Distinguished!)
+    var busInMatch = trimmed.match(/^input\s*\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\]\s*([a-zA-Z0-9_]+);/);
+    if (busInMatch) {
+      var msb = busInMatch[1];
+      var lsb = busInMatch[2];
+      var bName = busInMatch[3];
+      var totalBits = Math.abs(parseInt(msb, 10) - parseInt(lsb, 10)) + 1;
+      return "Creates a bundle of " + totalBits + " wires named '" + bName + "' (from bit " + msb + " to " + lsb + "). You access them as " + bName + "[0], " + bName + "[1], etc.";
     }
 
-    // Procedural blocks
+    // Single-bit inputs
+    var singleInMatch = trimmed.match(/^input\s+([^;]+);/);
+    if (singleInMatch && !trimmed.includes("[")) {
+      var inPins = singleInMatch[1].trim();
+      return "Declares individual 1-bit input wire(s): " + inPins + ". Each wire carries a single 0 or 1.";
+    }
+
+    // MULTI-BIT BUS OUTPUTS
+    var busOutRegMatch = trimmed.match(/^output\s+reg\s*\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\]\s*([a-zA-Z0-9_]+);/);
+    if (busOutRegMatch) {
+      var bNameR = busOutRegMatch[3];
+      return "Declares a 4-bit output register bundle '" + bNameR + "'. 'reg' is required because it is modified inside an always block.";
+    }
+
+    var busOutMatch = trimmed.match(/^output\s*\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\]\s*([a-zA-Z0-9_]+);/);
+    if (busOutMatch) {
+      var bNameO = busOutMatch[3];
+      return "Declares a 4-bit output bus '" + bNameO + "' containing 4 wires: " + bNameO + "[0], " + bNameO + "[1], " + bNameO + "[2], " + bNameO + "[3].";
+    }
+
+    // Single-bit output reg
+    var outRegMatch = trimmed.match(/^output\s+reg\s+([^;]+);/);
+    if (outRegMatch && !trimmed.includes("[")) {
+      return "Declares output '" + outRegMatch[1].trim() + "'. Marked as 'reg' because any output changed inside an 'always' block must remember its value.";
+    }
+
+    // Single-bit normal output wire
+    var singleOutMatch = trimmed.match(/^output\s+([^;]+);/);
+    if (singleOutMatch && !trimmed.includes("[")) {
+      return "Declares output wire pin(s): " + singleOutMatch[1].trim() + ". Sends the calculated 0 or 1 out of the chip.";
+    }
+
+    // Internal connecting wires
+    var wireMatch = trimmed.match(/^wire\s+([^;]+);/);
+    if (wireMatch) {
+      return "Declares internal wire(s) (" + wireMatch[1].trim() + ") used only inside the chip to connect one gate's output to another gate's input.";
+    }
+
+    // Procedural sensitivity lists
     if (trimmed.startsWith("always @(posedge clk or posedge rst)")) {
-      return "Sequential procedural trigger: activates on clock rising edge OR asynchronous reset.";
+      return "Wake up on rising clock edge OR when reset pin becomes 1. Used for flip-flops with asynchronous reset.";
     }
     if (trimmed.startsWith("always @(posedge clk)")) {
-      return "Sequential procedural trigger: activates on the rising edge of clock signal.";
+      return "Wake up only on the rising transition of clock signal (0 -> 1).";
     }
     if (trimmed.startsWith("always @(*)")) {
-      return "Combinational procedural block: evaluates whenever any input changes.";
+      return "Wake up immediately whenever ANY input wire changes. Used for combinational logic.";
     }
+
+    // Begin / end
     if (trimmed === "begin") {
-      return "Opens a procedural block of statements.";
+      return "Start of multiple statements block (like opening curly brace '{' in C or Java).";
     }
     if (trimmed === "end") {
-      return "Closes the procedural statement block.";
+      return "End of this block of statements (like closing curly brace '}').";
     }
 
-    // Conditionals & Case
+    // If-else
     if (trimmed.startsWith("if (rst)")) {
-      return "Checks asynchronous reset (highest priority): clears output immediately.";
+      return "Check reset first: if reset is 1 (pressed), immediately force output to 0.";
     }
-    if (trimmed.startsWith("else if") || trimmed.startsWith("if (")) {
-      return "Conditional check for specific input bit combination.";
+    if (trimmed.startsWith("else if (j == 0 && k == 1)")) {
+      return "If J=0 and K=1: this is the RESET condition (clears output to 0).";
+    }
+    if (trimmed.startsWith("else if (j == 1 && k == 0)")) {
+      return "If J=1 and K=0: this is the SET condition (forces output to 1).";
+    }
+    if (trimmed.startsWith("else if (j == 1 && k == 1)")) {
+      return "If J=1 and K=1: this is the TOGGLE condition (flips output ~q).";
+    }
+    if (trimmed.startsWith("else if")) {
+      return "Alternative condition check if previous condition was false.";
+    }
+    if (trimmed.startsWith("if (") && trimmed.includes("==")) {
+      return "Tests if the condition inside parentheses is true.";
     }
     if (trimmed.startsWith("else")) {
-      return "Default alternative branch executed when condition is false.";
-    }
-    if (trimmed.startsWith("case ")) {
-      return "Multi-way branch checking the input or select combination.";
-    }
-    if (trimmed.startsWith("endcase")) {
-      return "Terminates the case selection statement.";
-    }
-    if (trimmed.includes(": out =") || trimmed.includes(": q <=") || trimmed.includes("default:")) {
-      return "Branch match: executes assignment when select equals this label.";
+      return "Otherwise: runs when the above 'if' condition was false.";
     }
 
-    // Assign statements
-    if (trimmed.startsWith("assign ")) {
-      if (trimmed.includes("&") && !trimmed.includes("|") && !trimmed.includes("^") && !trimmed.includes("~")) {
-        return "Continuous Dataflow assignment: computes bitwise AND of inputs.";
-      }
-      if (trimmed.includes("|") && !trimmed.includes("&")) {
-        return "Continuous Dataflow assignment: computes bitwise OR of inputs.";
-      }
-      if (trimmed.includes("~A") || trimmed.includes("~a")) {
-        return "Continuous Dataflow assignment: computes bitwise inversion (NOT).";
-      }
-      if (trimmed.includes("^")) {
-        return "Continuous Dataflow assignment: computes Exclusive-OR (XOR) / Difference / Sum.";
-      }
-      return "Continuous Dataflow assignment: hardware equation continuously driving the target wire.";
+    // Case statements
+    if (trimmed.startsWith("case ({s1, s0})") || trimmed.startsWith("case ({s1,s0})")) {
+      return "Combines 1-bit pins s1 and s0 into a 2-bit number (00, 01, 10, 11) to pick which input to route.";
+    }
+    if (trimmed.startsWith("case ({j, k})") || trimmed.startsWith("case ({j,k})")) {
+      return "Combines J and K into a 2-bit value (00=Hold, 01=Reset, 10=Set, 11=Toggle).";
+    }
+    if (trimmed.startsWith("case ")) {
+      return "Checks the value inside parentheses and branches to the matching case label below.";
+    }
+    if (trimmed.startsWith("endcase")) {
+      return "Marks the end of the case decision list.";
+    }
+
+    // Case branches
+    if (trimmed.startsWith("2'b00:")) {
+      return "When inputs are 00: executes this statement.";
+    }
+    if (trimmed.startsWith("2'b01:")) {
+      return "When inputs are 01: executes this statement.";
+    }
+    if (trimmed.startsWith("2'b10:")) {
+      return "When inputs are 10: executes this statement.";
+    }
+    if (trimmed.startsWith("2'b11:")) {
+      return "When inputs are 11: executes this statement.";
+    }
+    if (trimmed.startsWith("default:")) {
+      return "Safety fallback: runs if input did not match any label above.";
+    }
+
+    // SPECIFIC ASSIGN EQUATIONS
+    if (trimmed.startsWith("assign Y=A&B;") || trimmed.startsWith("assign Y = A & B;")) {
+      return "AND logic: output Y will be 1 ONLY when both A and B are 1; otherwise Y is 0.";
+    }
+    if (trimmed.startsWith("assign Y=A|B;") || trimmed.startsWith("assign Y = A | B;")) {
+      return "OR logic: output Y will be 1 if either A is 1, or B is 1, or both are 1.";
+    }
+    if (trimmed.startsWith("assign Y=~A;") || trimmed.startsWith("assign Y = ~A;")) {
+      return "NOT logic: inverts A. If A is 0, Y becomes 1; if A is 1, Y becomes 0.";
+    }
+    if (trimmed.startsWith("assign Y=~(A&B);") || trimmed.startsWith("assign Y = ~(A & B);")) {
+      return "NAND logic: ANDs A & B first, then inverts the result with '~'.";
+    }
+    if (trimmed.startsWith("assign Y=~(A|B);") || trimmed.startsWith("assign Y = ~(A | B);")) {
+      return "NOR logic: ORs A | B first, then inverts the result with '~'.";
+    }
+    if (trimmed.startsWith("assign Y=A^B;") || trimmed.startsWith("assign Y = A ^ B;")) {
+      return "XOR logic: Y is 1 when inputs are DIFFERENT (01 or 10). Y is 0 when identical.";
+    }
+    if (trimmed.startsWith("assign Y=A~^B;") || trimmed.startsWith("assign Y = A ~^ B;") || trimmed.includes("~(A ^ B)")) {
+      return "XNOR logic: Y is 1 when inputs are EQUAL (both 0 or both 1). Acts as an equality tester.";
+    }
+
+    // Adders & Subtractors assigns
+    if (trimmed.startsWith("assign S = A ^ B;") || trimmed.startsWith("assign S=A^B;")) {
+      return "Half Adder Sum: computes A XOR B (1+0=1, 0+1=1, 1+1=0 sum).";
+    }
+    if (trimmed.startsWith("assign C = A & B;") || trimmed.startsWith("assign C=A&B;")) {
+      return "Half Adder Carry: produces carry 1 only when adding 1 + 1.";
+    }
+    if (trimmed.startsWith("assign S = A ^ B ^ Cin;")) {
+      return "Full Adder Sum: 3-way XOR of operands A, B, and incoming carry Cin.";
+    }
+    if (trimmed.startsWith("assign Cout =")) {
+      return "Full Adder Carry-out: produces 1 if at least two of the three inputs are 1.";
+    }
+    if (trimmed.startsWith("assign Diff = A ^ B;") || trimmed.startsWith("assign Diff=A^B;")) {
+      return "Half Subtractor Difference: computes A XOR B (0-1=1 with borrow, 1-0=1).";
+    }
+    if (trimmed.startsWith("assign Borrow = ~A & B;") || trimmed.startsWith("assign Borrow=~A&B;")) {
+      return "Half Subtractor Borrow: needs a borrow only when subtracting 1 from 0 (A=0, B=1).";
+    }
+    if (trimmed.startsWith("assign Diff = A ^ B ^ Bin;")) {
+      return "Full Subtractor Difference: 3-way XOR of minuend A, subtrahend B, and previous borrow Bin.";
+    }
+    if (trimmed.startsWith("assign Bout =")) {
+      return "Full Subtractor Borrow-out: produces borrow 1 when the subtraction requires borrowing from next column.";
+    }
+
+    // Mux assigns
+    if (trimmed.startsWith("assign out=(~s1&~s0&in[0])") || trimmed.startsWith("assign out = (~s1 & ~s0 & in[0])")) {
+      return "Dataflow 4:1 Mux: routes wire in[0] to out when s1=0, s0=0.";
+    }
+    if (trimmed.includes("(~s1&s0&in[1])") || trimmed.includes("(~s1 &  s0 & in[1])")) {
+      return "Dataflow 4:1 Mux: routes wire in[1] to out when s1=0, s0=1.";
+    }
+    if (trimmed.includes("(s1&~s0&in[2])") || trimmed.includes("( s1 & ~s0 & in[2])")) {
+      return "Dataflow 4:1 Mux: routes wire in[2] to out when s1=1, s0=0.";
+    }
+    if (trimmed.includes("(s1&s0&in[3])") || trimmed.includes("( s1 &  s0 & in[3])")) {
+      return "Dataflow 4:1 Mux: routes wire in[3] to out when s1=1, s0=1.";
+    }
+    if (trimmed.startsWith("assign y = (~sel & d0) | (sel & d1);")) {
+      return "Dataflow 2:1 Mux: if sel=0 passes d0; if sel=1 passes d1.";
+    }
+
+    // Demux assigns
+    if (trimmed.startsWith("assign out[0]=~s1&~s0&in;") || trimmed.startsWith("assign out[0] = ~s1 & ~s0 & in;")) {
+      return "Passes data input 'in' onto wire out[0] only when select lines s1=0, s0=0.";
+    }
+    if (trimmed.startsWith("assign out[1]=~s1&s0&in;") || trimmed.startsWith("assign out[1] = ~s1 &  s0 & in;")) {
+      return "Passes data input 'in' onto wire out[1] only when select lines s1=0, s0=1.";
+    }
+    if (trimmed.startsWith("assign out[2]=s1&~s0&in;") || trimmed.startsWith("assign out[2] =  s1 & ~s0 & in;")) {
+      return "Passes data input 'in' onto wire out[2] only when select lines s1=1, s0=0.";
+    }
+    if (trimmed.startsWith("assign out[3]=s1&s0&in;") || trimmed.startsWith("assign out[3] =  s1 &  s0 & in;")) {
+      return "Passes data input 'in' onto wire out[3] only when select lines s1=1, s0=1.";
+    }
+    if (trimmed.startsWith("assign y0 = ~sel & d;")) {
+      return "Routes input d to output y0 when sel is 0.";
+    }
+    if (trimmed.startsWith("assign y1 = sel & d;")) {
+      return "Routes input d to output y1 when sel is 1.";
     }
 
     // Gate primitives
-    var primMatch = trimmed.match(/^(and|or|not|nand|nor|xor|xnor)\s+(\w+)?\s*\(([^)]+)\);/);
+    var primMatch = trimmed.match(/^(and|or|not|nand|nor|xor|xnor)\s+([a-zA-Z0-9_]+)?\s*\(([^)]+)\);/);
     if (primMatch) {
-      var pType = primMatch[1].toUpperCase();
+      var pName = primMatch[1].toUpperCase();
+      var gInst = primMatch[2] ? (" '" + primMatch[2] + "'") : "";
       var args = primMatch[3].split(',').map(function (s) { return s.trim(); });
-      return "Structural primitive: hardware " + pType + " gate driving output '" + args[0] + "'.";
+      var outP = args[0];
+      var inPs = args.slice(1).join(', ');
+      return "Structural " + pName + " gate" + gInst + ": drives output '" + outP + "' from inputs (" + inPs + "). In Verilog primitives, output is always 1st!";
     }
 
-    // Non-blocking & blocking assignments
-    if (trimmed.includes("<=")) {
-      return "Non-blocking assignment: schedules update at clock transition concurrently.";
+    // Flip-flop non-blocking assignments
+    if (trimmed.startsWith("q <= 1'b0;")) {
+      return "Resets flip-flop output q to 0 at the clock trigger.";
     }
-    if (trimmed.includes("=")) {
-      return "Procedural assignment updating the register.";
+    if (trimmed.startsWith("q <= d;")) {
+      return "Captures data input d and stores it into output q on rising clock edge.";
+    }
+    if (trimmed.startsWith("q <= ~q;")) {
+      return "Toggle: inverts the stored state of q (if 0 becomes 1; if 1 becomes 0).";
+    }
+    if (trimmed.startsWith("q <= q;")) {
+      return "Hold: keeps the current stored value unchanged.";
     }
 
-    return "Executes hardware logic for this circuit.";
+    // General fallback
+    if (trimmed.startsWith("assign ")) {
+      return "Continuous hardware connection: continuously computes right-hand side and drives left-hand wire.";
+    }
+
+    return "Executes hardware logic for this line.";
   }
 
   // Syntax highlighter for Verilog keywords and primitives
@@ -188,7 +341,6 @@
     var types = ["input", "output", "wire", "reg"];
     var primitives = ["and", "or", "not", "nand", "nor", "xor", "xnor"];
 
-    // Escape raw HTML first
     var safe = escapeHtml(codeText);
 
     // Comments first
@@ -339,7 +491,7 @@
       stylesHtml = `
         <div style="margin-top: 1.25rem;">
           <h3>Three Types of Verilog Modeling</h3>
-          <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:0.5rem;"><em>Hover your mouse over any line of code below to see its exact meaning on the right!</em></p>
+          <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:0.5rem;"><em>Hover your mouse over any line of code below to see its exact plain-English meaning!</em></p>
           ${colorLegendHtml}
           ${dfCode}
           ${behCode}
