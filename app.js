@@ -1,6 +1,7 @@
 /**
  * Main application logic for Verilog Basics Lab.
  * Manages tabs, lesson navigation, practice problems, code editing, and rendering checker results.
+ * Now includes Syntax Highlighting for built-in keywords and interactive hover line explanations.
  */
 
 (function () {
@@ -68,7 +69,172 @@
     }
   });
 
-  // 3. Render Learn Sidebar & Lessons
+  // 3. Syntax Highlighting & Line Explanation Generator
+  function getLineExplanation(line, circuitTitle) {
+    var trimmed = line.trim();
+    if (!trimmed) return "";
+
+    // Comments
+    if (trimmed.startsWith("//")) {
+      return "Comment (ignored by synthesizer / compiler).";
+    }
+
+    // Module header
+    if (trimmed.startsWith("module ")) {
+      return "Declares the hardware module name and external interface port list.";
+    }
+
+    // Endmodule
+    if (trimmed === "endmodule" || trimmed.startsWith("endmodule")) {
+      return "Closes and terminates the module definition.";
+    }
+
+    // Ports
+    if (trimmed.startsWith("input ") && trimmed.includes("output")) {
+      return "ANSI port list declaring inputs and outputs together.";
+    }
+    if (trimmed.startsWith("input ")) {
+      return "Declares incoming input signal pins to this circuit.";
+    }
+    if (trimmed.startsWith("output reg ")) {
+      return "Declares output pins as 'reg' because they are assigned procedurally inside an always block.";
+    }
+    if (trimmed.startsWith("output ")) {
+      return "Declares outgoing output signal pins from this circuit.";
+    }
+    if (trimmed.startsWith("wire ")) {
+      return "Declares internal interconnecting wires between intermediate logic gates.";
+    }
+
+    // Procedural blocks
+    if (trimmed.startsWith("always @(posedge clk or posedge rst)")) {
+      return "Sequential procedural trigger: activates on clock rising edge OR asynchronous reset.";
+    }
+    if (trimmed.startsWith("always @(posedge clk)")) {
+      return "Sequential procedural trigger: activates on the rising edge of clock signal.";
+    }
+    if (trimmed.startsWith("always @(*)")) {
+      return "Combinational procedural block: evaluates whenever any input changes.";
+    }
+    if (trimmed === "begin") {
+      return "Opens a procedural block of statements.";
+    }
+    if (trimmed === "end") {
+      return "Closes the procedural statement block.";
+    }
+
+    // Conditionals & Case
+    if (trimmed.startsWith("if (rst)")) {
+      return "Checks asynchronous reset (highest priority): clears output immediately.";
+    }
+    if (trimmed.startsWith("else if") || trimmed.startsWith("if (")) {
+      return "Conditional check for specific input bit combination.";
+    }
+    if (trimmed.startsWith("else")) {
+      return "Default alternative branch executed when condition is false.";
+    }
+    if (trimmed.startsWith("case ")) {
+      return "Multi-way branch checking the input or select combination.";
+    }
+    if (trimmed.startsWith("endcase")) {
+      return "Terminates the case selection statement.";
+    }
+    if (trimmed.includes(": out =") || trimmed.includes(": q <=") || trimmed.includes("default:")) {
+      return "Branch match: executes assignment when select equals this label.";
+    }
+
+    // Assign statements
+    if (trimmed.startsWith("assign ")) {
+      if (trimmed.includes("&") && !trimmed.includes("|") && !trimmed.includes("^") && !trimmed.includes("~")) {
+        return "Continuous Dataflow assignment: computes bitwise AND of inputs.";
+      }
+      if (trimmed.includes("|") && !trimmed.includes("&")) {
+        return "Continuous Dataflow assignment: computes bitwise OR of inputs.";
+      }
+      if (trimmed.includes("~A") || trimmed.includes("~a")) {
+        return "Continuous Dataflow assignment: computes bitwise inversion (NOT).";
+      }
+      if (trimmed.includes("^")) {
+        return "Continuous Dataflow assignment: computes Exclusive-OR (XOR) / Difference / Sum.";
+      }
+      return "Continuous Dataflow assignment: hardware equation continuously driving the target wire.";
+    }
+
+    // Gate primitives
+    var primMatch = trimmed.match(/^(and|or|not|nand|nor|xor|xnor)\s+(\w+)?\s*\(([^)]+)\);/);
+    if (primMatch) {
+      var pType = primMatch[1].toUpperCase();
+      var args = primMatch[3].split(',').map(function (s) { return s.trim(); });
+      return "Structural primitive: hardware " + pType + " gate driving output '" + args[0] + "'.";
+    }
+
+    // Non-blocking & blocking assignments
+    if (trimmed.includes("<=")) {
+      return "Non-blocking assignment: schedules update at clock transition concurrently.";
+    }
+    if (trimmed.includes("=")) {
+      return "Procedural assignment updating the register.";
+    }
+
+    return "Executes hardware logic for this circuit.";
+  }
+
+  // Syntax highlighter for Verilog keywords and primitives
+  function highlightVerilogCode(codeText) {
+    var keywords = [
+      "module", "endmodule", "assign", "always", "begin", "end", 
+      "posedge", "negedge", "if", "else", "case", "endcase", "default"
+    ];
+    var types = ["input", "output", "wire", "reg"];
+    var primitives = ["and", "or", "not", "nand", "nor", "xor", "xnor"];
+
+    // Escape raw HTML first
+    var safe = escapeHtml(codeText);
+
+    // Comments first
+    safe = safe.replace(/(\/\/[^\n]*)/g, '<span class="hl-cmt">$1</span>');
+
+    // Literals: 1'b0, 1'b1, 2'b00, 4'b0000
+    safe = safe.replace(/\b([0-9]+'b[01]+)\b/g, '<span class="hl-num">$1</span>');
+
+    // Keywords
+    keywords.forEach(function (kw) {
+      var re = new RegExp('\\b(' + kw + ')\\b', 'g');
+      safe = safe.replace(re, '<span class="hl-kw">$1</span>');
+    });
+
+    // Types
+    types.forEach(function (tp) {
+      var re = new RegExp('\\b(' + tp + ')\\b', 'g');
+      safe = safe.replace(re, '<span class="hl-type">$1</span>');
+    });
+
+    // Primitives
+    primitives.forEach(function (pr) {
+      var re = new RegExp('\\b(' + pr + ')\\b', 'g');
+      safe = safe.replace(re, '<span class="hl-prim">$1</span>');
+    });
+
+    return safe;
+  }
+
+  // Generate interactive hoverable code lines
+  function generateInteractiveCodeBlock(codeText, circuitTitle) {
+    var lines = codeText.split('\n');
+    var htmlLines = lines.map(function (line) {
+      if (!line.trim()) {
+        return '<div class="code-line"><span class="line-code-text">&nbsp;</span></div>';
+      }
+      var highlighted = highlightVerilogCode(line);
+      var tip = getLineExplanation(line, circuitTitle);
+      var tipSpan = tip ? '<span class="line-tooltip">💡 ' + escapeHtml(tip) + '</span>' : '';
+      return '<div class="code-line"><span class="line-code-text">' + highlighted + '</span>' + tipSpan + '</div>';
+    }).join('');
+
+    return '<div class="code-block-interactive">' + htmlLines + '</div>';
+  }
+
+  // 4. Render Learn Sidebar & Lessons
   function initLearnSection() {
     learnTopicListEl.innerHTML = '';
     window.VerilogLessons.forEach(function (lesson, idx) {
@@ -126,7 +292,7 @@
           <div class="callout-title">🔍 Syntax Breakdown: Compulsory Keywords vs. User Variables</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
             <div>
-              <strong style="color: #0969da;">Fixed / Compulsory Elements (Reserved by Verilog):</strong>
+              <strong style="color: var(--hl-keyword);">Fixed / Compulsory Elements (Reserved by Verilog):</strong>
               <ul style="padding-left: 1.2rem; margin-top: 0.25rem;">${compItems}</ul>
             </div>
             <div>
@@ -138,30 +304,43 @@
       `;
     }
 
-    // Three Modeling Styles Display
+    // Color Legend Bar
+    var colorLegendHtml = `
+      <div class="color-legend">
+        <span class="legend-title">Color Guide:</span>
+        <span class="legend-item"><span class="legend-dot dot-kw"></span> <span class="hl-kw">Compulsory Keyword</span> (module, assign, always)</span>
+        <span class="legend-item"><span class="legend-dot dot-type"></span> <span class="hl-type">Port / Type</span> (input, output, wire, reg)</span>
+        <span class="legend-item"><span class="legend-dot dot-prim"></span> <span class="hl-prim">Gate Primitive</span> (and, or, xor, not)</span>
+        <span class="legend-item"><span class="legend-dot dot-user"></span> <span>User Variables</span> (A, B, Y, clk)</span>
+      </div>
+    `;
+
+    // Three Modeling Styles Display with interactive hover
     var stylesHtml = '';
     if (lesson.styles) {
       var dfCode = lesson.styles.dataflow ? `
-        <div style="margin-bottom: 1rem;">
+        <div style="margin-bottom: 1.25rem;">
           <h4 style="color: #0969da; margin-bottom: 0.25rem;">1. Dataflow Modeling (using assign)</h4>
-          <pre><code>${escapeHtml(lesson.styles.dataflow)}</code></pre>
+          ${generateInteractiveCodeBlock(lesson.styles.dataflow, lesson.title)}
         </div>` : '';
 
       var behCode = lesson.styles.behavioral ? `
-        <div style="margin-bottom: 1rem;">
-          <h4 style="color: #1a7f37; margin-bottom: 0.25rem;">2. Behavioral Modeling (using always procedural block)</h4>
-          <pre><code>${escapeHtml(lesson.styles.behavioral)}</code></pre>
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="color: #1a7f37; margin-bottom: 0.25rem;">2. Behavioral Modeling (using always block)</h4>
+          ${generateInteractiveCodeBlock(lesson.styles.behavioral, lesson.title)}
         </div>` : '';
 
       var structCode = lesson.styles.structural ? `
-        <div style="margin-bottom: 1rem;">
+        <div style="margin-bottom: 1.25rem;">
           <h4 style="color: #6a4b00; margin-bottom: 0.25rem;">3. Structural Modeling (using gate primitives / internal wires)</h4>
-          <pre><code>${escapeHtml(lesson.styles.structural)}</code></pre>
+          ${generateInteractiveCodeBlock(lesson.styles.structural, lesson.title)}
         </div>` : '';
 
       stylesHtml = `
         <div style="margin-top: 1.25rem;">
           <h3>Three Types of Verilog Modeling</h3>
+          <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:0.5rem;"><em>Hover your mouse over any line of code below to see its exact meaning on the right!</em></p>
+          ${colorLegendHtml}
           ${dfCode}
           ${behCode}
           ${structCode}
@@ -195,7 +374,7 @@
 
       ${syntaxBreakdownHtml}
 
-      <h3>Line by line Explanation</h3>
+      <h3>Line by line Summary</h3>
       <ol>${lineByLineHtml}</ol>
 
       <div class="callout callout-warning">
@@ -214,7 +393,7 @@
     }
   }
 
-  // 4. Render Practice Problems
+  // 5. Render Practice Problems
   function initPracticeSection() {
     practiceProblemListEl.innerHTML = '';
     window.VerilogProblems.forEach(function (prob) {
@@ -284,7 +463,7 @@
     resultHintContainer.innerHTML = '';
   }
 
-  // 5. Verification Trigger & Result Display
+  // 6. Verification Trigger & Result Display
   btnCheck.addEventListener('click', function () {
     var prob = window.VerilogProblems.find(function (p) { return p.id === currentProblemId; });
     if (!prob) return;
@@ -399,14 +578,20 @@
     resultTableContainer.innerHTML = '<table class="res-table"><thead><tr>' + thHtml + '</tr></thead><tbody>' + trHtml + '</tbody></table>';
   }
 
-  // 6. Populate Cheat Sheet
+  // 7. Populate Cheat Sheet
   function initCheatSheet() {
     var cheatItems = [
       {
-        title: "The 3 Modeling Styles Summary",
-        code: `// 1. DATAFLOW: assign Y = A & B; (wire output)
-// 2. BEHAVIORAL: always @(*) Y = A & B; (output reg Y)
-// 3. STRUCTURAL: and g1(Y, A, B); (wires & primitives)`
+        title: "Color Guide & 3 Modeling Styles",
+        code: `// COLOR GUIDE:
+// RED: Compulsory Keywords (module, endmodule, assign, always, begin, end, case)
+// BLUE: Port Types (input, output, wire, reg)
+// PURPLE: Built-in Primitives (and, or, not, xor, nand, nor, xnor)
+// DEFAULT: User Variables (A, B, Y, clk, rst, in, out)
+
+// 1. DATAFLOW: assign Y = A & B;
+// 2. BEHAVIORAL: always @(*) Y = A & B; (requires: output reg Y;)
+// 3. STRUCTURAL: and g1(Y, A, B);`
       },
       {
         title: "1. AND Gate (All 3 Styles)",
@@ -622,7 +807,7 @@ endmodule`
       return `
         <div class="cheat-card">
           <h3>${item.title}</h3>
-          <pre><code>${escapeHtml(item.code)}</code></pre>
+          <pre><code>${highlightVerilogCode(item.code)}</code></pre>
         </div>
       `;
     }).join('');
