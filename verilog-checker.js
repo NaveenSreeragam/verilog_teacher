@@ -3,14 +3,15 @@
  * Supports:
  * - Comments (// and /* * /)
  * - ANSI and non-ANSI module declarations
- * - Multi-bit signals and bit-indexing (e.g. [1:0] sel, d[0], sel[1])
- * - Concatenation {a, b} in expressions and case statements
+ * - Multi-bit signals and bit-indexing (e.g. [1:0] sel, d[0], sel[1], in[0], out[3])
+ * - Multi-bit LHS assignments (e.g. out[0] = ... or out = ...)
+ * - Multi-bit concatenation {a, b} in expressions and case statements
  * - Multi-line assign statements
  * - Continuous assignments (assign y = ...)
  * - Gate primitives (and, or, not, nand, nor, xor, xnor)
  * - always @(*) blocks with nested begin/end, if/else, case/endcase (with default), =, <=
  * - always @(posedge clk) and always @(posedge clk or posedge rst)
- * - Bitwise operators, ternary ?: , literals 1'b0, 1'b1, 2'b00, etc.
+ * - Bitwise operators, ternary ?: , literals 1'b0, 1'b1, 2'b00, 4'b0000, etc.
  */
 
 (function (root, factory) {
@@ -136,17 +137,30 @@
         return { eval: function () { return num; } };
       }
 
-      // Signal or bit select: e.g. "a", "sel[1]", "d[0]"
+      // Signal or bit select: e.g. "a", "sel[1]", "d[0]", "in[2]"
       var sigMatch = token.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(?:\[\s*([0-9]+)\s*\])?$/);
       if (sigMatch) {
         var name = sigMatch[1];
         var bitIdx = sigMatch[2] !== undefined ? parseInt(sigMatch[2], 10) : null;
         return {
           eval: function (ctx) {
-            if (!(name in ctx)) {
+            // Case-sensitive first, then case-insensitive fallback
+            var foundKey = null;
+            if (name in ctx) {
+              foundKey = name;
+            } else {
+              var lower = name.toLowerCase();
+              for (var k in ctx) {
+                if (k.toLowerCase() === lower) {
+                  foundKey = k;
+                  break;
+                }
+              }
+            }
+            if (foundKey === null) {
               throw new Error("Unknown signal '" + name + "' in expression");
             }
-            var sigVal = ctx[name] || 0;
+            var sigVal = ctx[foundKey] || 0;
             if (bitIdx !== null) {
               return (sigVal >> bitIdx) & 1;
             }
@@ -261,8 +275,19 @@
         lsb: lsb || 0,
         isReg: !!isReg
       };
-      ports.push(port);
-      portsByName[name] = port;
+      // If already declared (e.g. in port list then redefined with width in body)
+      if (portsByName[name]) {
+        if (direction) portsByName[name].direction = direction;
+        if (width && width > 1) {
+          portsByName[name].width = width;
+          portsByName[name].msb = msb;
+          portsByName[name].lsb = lsb;
+        }
+        if (isReg) portsByName[name].isReg = true;
+      } else {
+        ports.push(port);
+        portsByName[name] = port;
+      }
     }
 
     function parseRange(rangeStr) {
@@ -303,7 +328,14 @@
         }
       }
     } else {
-      // Non-ANSI ports
+      // Non-ANSI ports: module m(Y,A,B); input A,B; output Y;
+      // First populate names from header
+      var headerNames = portListStr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      for (var h = 0; h < headerNames.length; h++) {
+        addPort(headerNames[h], 'input', 1, 0, 0, false);
+      }
+
+      // Now scan body for input/output declarations
       var dirRegex = /\b(input|output)\s*(reg|wire)?\s*(\[\s*[0-9]+\s*:\s*[0-9]+\s*\])?\s*([^;]+);/g;
       var dMatch;
       while ((dMatch = dirRegex.exec(moduleBody)) !== null) {
@@ -376,7 +408,7 @@
       });
     }
 
-    // Check for obvious syntax error: assign statement without ending semicolon
+    // Check for assign statement without ending semicolon
     var nonCommentBody = moduleBody.replace(assignRegex, '').replace(gateRegex, '').replace(alwaysRegex, '');
     var unhandledAssign = nonCommentBody.match(/\bassign\s+[^;]+(?:\n|$)/);
     if (unhandledAssign) {
@@ -392,6 +424,23 @@
       alwaysBlocks: alwaysBlocks,
       rawCode: rawCode
     };
+  }
+
+  // Helper to set value to signal (scalar or bit-select)
+  function setTargetValue(target, val, context) {
+    var bitMatch = target.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\[\s*([0-9]+)\s*\]$/);
+    if (bitMatch) {
+      var tName = bitMatch[1];
+      var bIdx = parseInt(bitMatch[2], 10);
+      var curVal = context[tName] || 0;
+      if (val & 1) {
+        context[tName] = curVal | (1 << bIdx);
+      } else {
+        context[tName] = curVal & ~(1 << bIdx);
+      }
+    } else {
+      context[target] = val;
+    }
   }
 
   // Tokenize statement block into control-flow items
@@ -493,19 +542,7 @@
         if (asgnMatch) {
           var target = asgnMatch[1].trim();
           var val = evaluateExpression(asgnMatch[3], context);
-          var bitMatch = target.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\[\s*([0-9]+)\s*\]$/);
-          if (bitMatch) {
-            var tName = bitMatch[1];
-            var bIdx = parseInt(bitMatch[2], 10);
-            var curVal = context[tName] || 0;
-            if (val & 1) {
-              context[tName] = curVal | (1 << bIdx);
-            } else {
-              context[tName] = curVal & ~(1 << bIdx);
-            }
-          } else {
-            context[target] = val;
-          }
+          setTargetValue(target, val, context);
           i += semi + 1;
           continue;
         }
@@ -536,7 +573,6 @@
       }
     }
 
-    // If next is an IF statement
     if (/^if\s*\(/.test(str)) {
       var pDepth = 0;
       var pStart = str.indexOf('(');
@@ -568,7 +604,6 @@
       };
     }
 
-    // Single statement ending with ';'
     var semi = str.indexOf(';');
     if (semi !== -1) {
       return {
@@ -616,9 +651,13 @@
   // Simulate combinational circuit
   function simulateCombinational(parsedModule, inputValues) {
     var context = {};
+    // Populate all inputs (also store both original case and lowercase for case-insensitivity)
     for (var inName in inputValues) {
       context[inName] = inputValues[inName];
+      context[inName.toLowerCase()] = inputValues[inName];
+      context[inName.toUpperCase()] = inputValues[inName];
     }
+
     for (var i = 0; i < parsedModule.ports.length; i++) {
       var p = parsedModule.ports[i];
       if (p.direction === 'output' && !(p.name in context)) {
@@ -656,26 +695,14 @@
           outVal = (inVals.reduce(function (a, b) { return (a ^ b) & 1; }, 0)) ? 0 : 1;
           break;
       }
-      context[gate.output] = outVal;
+      setTargetValue(gate.output, outVal, context);
     }
 
     // Assign statements
     for (var a = 0; a < parsedModule.assigns.length; a++) {
       var asgn = parsedModule.assigns[a];
       var val = evaluateExpression(asgn.expr, context);
-      var bitMatch = asgn.target.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\[\s*([0-9]+)\s*\]$/);
-      if (bitMatch) {
-        var tName = bitMatch[1];
-        var bIdx = parseInt(bitMatch[2], 10);
-        var curVal = context[tName] || 0;
-        if (val & 1) {
-          context[tName] = curVal | (1 << bIdx);
-        } else {
-          context[tName] = curVal & ~(1 << bIdx);
-        }
-      } else {
-        context[asgn.target] = val;
-      }
+      setTargetValue(asgn.target, val, context);
     }
 
     // always @(*) blocks
@@ -717,14 +744,21 @@
       if ('j' in stepData) context.j = stepData.j;
       if ('k' in stepData) context.k = stepData.k;
 
-      // Active-high asynchronous reset or rising clock edge
+      // Duplicate in case uppercase / lowercase used
+      for (var k in context) {
+        context[k.toLowerCase()] = context[k];
+        context[k.toUpperCase()] = context[k];
+      }
+
       if (stepData.rst === 1) {
         executeStatements(dffBlock.body, context);
       } else if (stepData.clkEdge === 'posedge' || stepData.clk === 1) {
         executeStatements(dffBlock.body, context);
       }
 
-      state.q = (context.q !== undefined) ? (context.q & 1) : 0;
+      // Check q in context (or Q)
+      var qVal = context.q !== undefined ? context.q : context.Q;
+      state.q = (qVal !== undefined) ? (qVal & 1) : 0;
 
       results.push({
         step: stepData.step || (s + 1),
@@ -744,8 +778,8 @@
     try {
       var parsed = parseVerilog(userCode);
 
-      // Check module name
-      if (parsed.moduleName !== problem.moduleName) {
+      // Check module name (case-insensitive check for learner convenience)
+      if (parsed.moduleName.toLowerCase() !== problem.moduleName.toLowerCase()) {
         return {
           status: 'error',
           errorType: 'module_name',
@@ -754,10 +788,19 @@
         };
       }
 
-      // Check ports
+      // Check required ports (case-insensitive lookup)
       for (var p = 0; p < problem.requiredPorts.length; p++) {
         var req = problem.requiredPorts[p];
-        var actual = parsed.portsByName[req.name];
+        var actual = null;
+        var reqLower = req.name.toLowerCase();
+
+        for (var portName in parsed.portsByName) {
+          if (portName.toLowerCase() === reqLower) {
+            actual = parsed.portsByName[portName];
+            break;
+          }
+        }
+
         if (!actual) {
           return {
             status: 'error',
@@ -770,16 +813,16 @@
           return {
             status: 'error',
             errorType: 'port_direction',
-            message: "Port '" + req.name + "' has wrong direction: declared as '" + actual.direction + "', expected '" + req.direction + "'.",
-            hint: "Change port '" + req.name + "' to be an " + req.direction + "."
+            message: "Port '" + actual.name + "' has wrong direction: declared as '" + actual.direction + "', expected '" + req.direction + "'.",
+            hint: "Change port '" + actual.name + "' to be an " + req.direction + "."
           };
         }
         if (req.width && actual.width !== req.width) {
           return {
             status: 'error',
             errorType: 'port_width',
-            message: "Port '" + req.name + "' has width " + actual.width + ", expected width " + req.width + " (e.g. [" + (req.width - 1) + ":0]).",
-            hint: "Declare " + req.name + " with bus range [" + (req.width - 1) + ":0]."
+            message: "Port '" + actual.name + "' has width " + actual.width + ", expected width " + req.width + " (e.g. [" + (req.width - 1) + ":0]).",
+            hint: "Declare " + actual.name + " with bus range [" + (req.width - 1) + ":0]."
           };
         }
       }
@@ -802,7 +845,15 @@
 
           for (var outKey in testCase.expected) {
             var expVal = testCase.expected[outKey];
-            var gotVal = simCtx[outKey] !== undefined ? simCtx[outKey] : 0;
+            var gotVal = simCtx[outKey];
+            if (gotVal === undefined) {
+              gotVal = simCtx[outKey.toLowerCase()];
+            }
+            if (gotVal === undefined) {
+              gotVal = simCtx[outKey.toUpperCase()];
+            }
+            if (gotVal === undefined) gotVal = 0;
+
             row.got[outKey] = gotVal;
             if (gotVal !== expVal) {
               row.passed = false;

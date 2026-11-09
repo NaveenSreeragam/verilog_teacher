@@ -115,6 +115,29 @@
       truthTableHtml = '<table class="data-table"><thead><tr>' + ths + '</tr></thead><tbody>' + trs + '</tbody></table>';
     }
 
+    // Compulsory vs User Variables HTML
+    var syntaxBreakdownHtml = '';
+    if (lesson.compulsoryElements && lesson.userElements) {
+      var compItems = lesson.compulsoryElements.map(function (item) { return '<li>' + item + '</li>'; }).join('');
+      var userItems = lesson.userElements.map(function (item) { return '<li>' + item + '</li>'; }).join('');
+
+      syntaxBreakdownHtml = `
+        <div class="callout callout-info" style="margin-top: 1rem;">
+          <div class="callout-title">🔍 Syntax Breakdown: Compulsory Keywords vs. User Variables</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+            <div>
+              <strong style="color: #0969da;">Fixed / Compulsory Elements (Reserved):</strong>
+              <ul style="padding-left: 1.2rem; margin-top: 0.25rem;">${compItems}</ul>
+            </div>
+            <div>
+              <strong style="color: #6a4b00;">User-Named Variables (Customizable):</strong>
+              <ul style="padding-left: 1.2rem; margin-top: 0.25rem;">${userItems}</ul>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     var lineByLineHtml = lesson.lineByLine.map(function (line) {
       return '<li>' + line + '</li>';
     }).join('');
@@ -137,11 +160,13 @@
       <h3>Truth / Characteristic Table</h3>
       ${truthTableHtml}
 
-      <h3>Verilog Implementation (assign / always)</h3>
+      <h3>Main Textbook Syntax (${lesson.syntaxType || "Dataflow Modeling"})</h3>
       <pre><code>${escapeHtml(lesson.verilogCode1)}</code></pre>
 
+      ${syntaxBreakdownHtml}
+
       ${lesson.verilogCode2 ? `
-        <h3>Alternative / Gate Primitive Style</h3>
+        <h3>Alternative Syntax (ANSI / Gate Primitives / Other Styles)</h3>
         <pre><code>${escapeHtml(lesson.verilogCode2)}</code></pre>
       ` : ''}
 
@@ -188,7 +213,6 @@
   }
 
   function selectProblem(problemId) {
-    // Cache current code before switching
     if (currentProblemId) {
       userCodeCache[currentProblemId] = codeEditor.value;
     }
@@ -203,24 +227,20 @@
     var prob = window.VerilogProblems[pIndex];
     if (!prob) return;
 
-    // Render problem details
     practiceDetailsEl.innerHTML = `
       <h2>${prob.title}</h2>
       <p class="lead">${prob.description}</p>
       <div class="callout callout-info" style="margin-bottom: 1rem;">
         <div class="callout-title">Required Module & Port Header:</div>
-        <code>${escapeHtml(prob.portDeclarationStr)}</code>
+        <pre style="margin: 0.3rem 0; padding: 0.5rem; background:#fff;"><code>${escapeHtml(prob.portDeclarationStr)}</code></pre>
       </div>
     `;
 
-    // Restore cached code or starter template
     codeEditor.value = userCodeCache[prob.id] !== undefined ? userCodeCache[prob.id] : prob.starterCode;
 
-    // Clear result box
     hideResult();
   }
 
-  // Helper to escape HTML characters
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;')
@@ -294,7 +314,6 @@
       return;
     }
 
-    // Render result table
     if (result.type === 'combinational' && result.testRows) {
       renderCombinationalTable(result.testRows);
     } else if (result.type === 'sequential' && result.seqResults) {
@@ -359,156 +378,128 @@
   function initCheatSheet() {
     var cheatItems = [
       {
-        title: "Verilog Basic Rules",
-        code: `// Module syntax
-module my_module(input a, input b, output y);
-  assign y = a & b;
+        title: "Compulsory vs User Names Rule",
+        code: `// COMPULSORY FIXED KEYWORDS (DO NOT CHANGE):
+// module, endmodule, input, output, wire, reg, assign, always, begin, end, posedge
+
+// USER-NAMED VARIABLES (CAN BE CUSTOMIZED):
+// module name (e.g. and_gate, mux4_1)
+// port names (e.g. A, B, Y, s0, s1, in, out)`
+      },
+      {
+        title: "1. AND Gate (Textbook Main)",
+        code: `module and_gate(Y,A,B);
+input A,B;
+output Y;
+assign Y=A&B;
 endmodule
 
-// Literals: 1'b0 (1 bit 0), 2'b10 (2-bit binary 2)
-// wire: for assign statements (cannot store)
-// reg:  for outputs assigned inside always blocks`
+// Alternative (ANSI Style):
+// module and_gate(input A, input B, output Y);
+//   assign Y = A & B;
+// endmodule`
       },
       {
-        title: "1. AND Gate",
-        code: `// Dataflow
-module and_gate(input a, input b, output y);
-  assign y = a & b;
-endmodule
-
-// Primitive
-module and_gate(input a, input b, output y);
-  and g1(y, a, b);
+        title: "2. OR Gate (Textbook Main)",
+        code: `module or_gate(A,B,Y);
+input A,B;
+output Y;
+assign Y=A|B;
 endmodule`
       },
       {
-        title: "2. OR Gate",
-        code: `// Dataflow
-module or_gate(input a, input b, output y);
-  assign y = a | b;
-endmodule
-
-// Primitive
-module or_gate(input a, input b, output y);
-  or g1(y, a, b);
+        title: "3. NOT Gate (Textbook Main)",
+        code: `module not_gate(A,Y);
+input A;
+output Y;
+assign Y=~A;
 endmodule`
       },
       {
-        title: "3. NOT Gate",
-        code: `// Dataflow
-module not_gate(input a, output y);
-  assign y = ~a;
-endmodule
-
-// Primitive
-module not_gate(input a, output y);
-  not n1(y, a);
+        title: "4. NAND Gate (Textbook Main)",
+        code: `module nand_gate(A,B,Y);
+input A,B;
+output Y;
+assign Y=~(A&B);
 endmodule`
       },
       {
-        title: "4. NAND Gate",
-        code: `// Dataflow
-module nand_gate(input a, input b, output y);
-  assign y = ~(a & b);
-endmodule
-
-// Primitive
-module nand_gate(input a, input b, output y);
-  nand g1(y, a, b);
+        title: "5. NOR Gate (Textbook Main)",
+        code: `module nor_gate(A,B,Y);
+input A,B;
+output Y;
+assign Y=~(A|B);
 endmodule`
       },
       {
-        title: "5. NOR Gate",
-        code: `// Dataflow
-module nor_gate(input a, input b, output y);
-  assign y = ~(a | b);
-endmodule
-
-// Primitive
-module nor_gate(input a, input b, output y);
-  nor g1(y, a, b);
+        title: "6. XOR Gate (Textbook Main)",
+        code: `module xor_gate(A,B,Y);
+input A,B;
+output Y;
+assign Y=A^B;
 endmodule`
       },
       {
-        title: "6. XOR Gate",
-        code: `// Dataflow
-module xor_gate(input a, input b, output y);
-  assign y = a ^ b;
-endmodule
-
-// Primitive
-module xor_gate(input a, input b, output y);
-  xor g1(y, a, b);
+        title: "7. XNOR Gate (Textbook Main)",
+        code: `module xnor_gate(A,B,Y);
+input A,B;
+output Y;
+assign Y=A~^B;
 endmodule`
       },
       {
-        title: "7. XNOR Gate",
-        code: `// Dataflow
-module xnor_gate(input a, input b, output y);
-  assign y = ~(a ^ b);
-endmodule
-
-// Primitive
-module xnor_gate(input a, input b, output y);
-  xnor g1(y, a, b);
+        title: "8. 4:1 Multiplexer (Dataflow Main)",
+        code: `module mux4_1(in,s0,s1,out);
+input s0,s1;
+input [3:0]in;
+output out;
+assign out=(~s1&~s0&in[0])|(~s1&s0&in[1])|(s1&~s0&in[2])|(s1&s0&in[3]);
 endmodule`
       },
       {
-        title: "8a. 2:1 Multiplexer",
-        code: `module mux_2to1(input d0, input d1, input sel, output y);
-  assign y = sel ? d1 : d0;
+        title: "9. 1:4 Demultiplexer (Dataflow Main)",
+        code: `module demux1_4(in,s0,s1,out);
+input s0,s1,in;
+output [3:0]out;
+assign out[0]=~s1&~s0&in;
+assign out[1]=~s1&s0&in;
+assign out[2]=s1&~s0&in;
+assign out[3]=s1&s0&in;
 endmodule`
       },
       {
-        title: "8b. 4:1 Multiplexer",
-        code: `module mux_4to1(input d0, input d1, input d2, input d3, input [1:0] sel, output y);
-  assign y = (sel == 2'b00) ? d0 :
-             (sel == 2'b01) ? d1 :
-             (sel == 2'b10) ? d2 : d3;
+        title: "10. D Flip-Flop (Behavioral Main)",
+        code: `module d_ff(clk,rst,d,q);
+input clk,rst,d;
+output reg q;
+always @(posedge clk or posedge rst)
+begin
+  if (rst)
+    q <= 1'b0;
+  else
+    q <= d;
+end
 endmodule`
       },
       {
-        title: "9a. 1:2 Demultiplexer",
-        code: `module demux_1to2(input d, input sel, output y0, output y1);
-  assign y0 = ~sel & d;
-  assign y1 = sel & d;
-endmodule`
-      },
-      {
-        title: "9b. 1:4 Demultiplexer",
-        code: `module demux_1to4(input d, input [1:0] sel, output y0, output y1, output y2, output y3);
-  assign y0 = (sel == 2'b00) ? d : 1'b0;
-  assign y1 = (sel == 2'b01) ? d : 1'b0;
-  assign y2 = (sel == 2'b10) ? d : 1'b0;
-  assign y3 = (sel == 2'b11) ? d : 1'b0;
-endmodule`
-      },
-      {
-        title: "10. D Flip-Flop (Async Reset)",
-        code: `module d_ff(input clk, input rst, input d, output reg q);
-  always @(posedge clk or posedge rst) begin
-    if (rst)
-      q <= 1'b0;
-    else
-      q <= d;
+        title: "11. JK Flip-Flop (Behavioral Main)",
+        code: `module jk_ff(clk,rst,j,k,q);
+input clk,rst,j,k;
+output reg q;
+always @(posedge clk or posedge rst)
+begin
+  if (rst)
+    q <= 1'b0;
+  else
+  begin
+    case ({j, k})
+      2'b00: q <= q;       // Hold
+      2'b01: q <= 1'b0;    // Reset
+      2'b10: q <= 1'b1;    // Set
+      2'b11: q <= ~q;      // Toggle
+    endcase
   end
-endmodule`
-      },
-      {
-        title: "11. JK Flip-Flop (Async Reset)",
-        code: `module jk_ff(input clk, input rst, input j, input k, output reg q);
-  always @(posedge clk or posedge rst) begin
-    if (rst)
-      q <= 1'b0;
-    else begin
-      case ({j, k})
-        2'b00: q <= q;       // Hold
-        2'b01: q <= 1'b0;    // Reset
-        2'b10: q <= 1'b1;    // Set
-        2'b11: q <= ~q;      // Toggle
-      endcase
-    end
-  end
+end
 endmodule`
       }
     ];
@@ -529,4 +520,3 @@ endmodule`
   initCheatSheet();
 
 })();
-
